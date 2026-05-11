@@ -61,22 +61,22 @@ cd signalwatch-benchlab
 ### Lancer les services
 
 ```bash
-# Lancer le service REST (port 3000)
-cargo run -p rest-service
-
-# Lancer le service gRPC (port 50051)
-cargo run -p grpc-service
+# Lancer REST + gRPC en une commande
+make run
 ```
 
 ### Lancer les benchmarks (tout en une commande)
 
 ```bash
-make benchmark-all
+make bench
 ```
 
 Commandes disponibles:
 
 ```bash
+make run
+make bench
+make report
 make benchmark-rest
 make benchmark-grpc
 make benchmark-all
@@ -90,6 +90,15 @@ Les scripts utilisent:
 Les resultats sont exportes automatiquement sous:
 - `benchmark/results/rest`
 - `benchmark/results/grpc`
+
+Un rapport consolide est genere via:
+
+```bash
+make report
+```
+
+Fichier de sortie:
+- `benchmark/results/report-latest.md`
 
 ---
 
