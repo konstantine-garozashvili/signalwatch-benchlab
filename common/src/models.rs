@@ -59,8 +59,7 @@ mod tests {
         };
 
         let json = serde_json::to_string(&sensor).expect("sensor should serialize");
-        let deserialized: Sensor =
-            serde_json::from_str(&json).expect("sensor should deserialize");
+        let deserialized: Sensor = serde_json::from_str(&json).expect("sensor should deserialize");
 
         assert_eq!(deserialized, sensor);
     }
