@@ -49,12 +49,7 @@ pub fn to_proto_sensor(sensor: Sensor) -> proto::Sensor {
 fn proto_sensor_type_to_domain(value: i32) -> Result<DomainSensorType, Status> {
     let sensor_type = proto::SensorType::try_from(value)
         .map_err(|_| Status::invalid_argument("invalid sensor type"))?;
-    match sensor_type {
-        proto::SensorType::Unspecified => Err(Status::invalid_argument("sensor type is required")),
-        proto::SensorType::Temperature => Ok(DomainSensorType::Temperature),
-        proto::SensorType::Pressure => Ok(DomainSensorType::Pressure),
-        proto::SensorType::Vibration => Ok(DomainSensorType::Vibration),
-    }
+    require_sensor_type(sensor_type)
 }
 
 fn domain_sensor_type_to_proto(value: DomainSensorType) -> proto::SensorType {
@@ -68,14 +63,7 @@ fn domain_sensor_type_to_proto(value: DomainSensorType) -> proto::SensorType {
 fn proto_sensor_status_to_domain(value: i32) -> Result<DomainSensorStatus, Status> {
     let status = proto::SensorStatus::try_from(value)
         .map_err(|_| Status::invalid_argument("invalid sensor status"))?;
-    match status {
-        proto::SensorStatus::Unspecified => {
-            Err(Status::invalid_argument("sensor status is required"))
-        }
-        proto::SensorStatus::Active => Ok(DomainSensorStatus::Active),
-        proto::SensorStatus::Inactive => Ok(DomainSensorStatus::Inactive),
-        proto::SensorStatus::Maintenance => Ok(DomainSensorStatus::Maintenance),
-    }
+    require_sensor_status(status)
 }
 
 fn domain_sensor_status_to_proto(value: DomainSensorStatus) -> proto::SensorStatus {
@@ -83,6 +71,24 @@ fn domain_sensor_status_to_proto(value: DomainSensorStatus) -> proto::SensorStat
         DomainSensorStatus::Active => proto::SensorStatus::Active,
         DomainSensorStatus::Inactive => proto::SensorStatus::Inactive,
         DomainSensorStatus::Maintenance => proto::SensorStatus::Maintenance,
+    }
+}
+
+fn require_sensor_type(sensor_type: proto::SensorType) -> Result<DomainSensorType, Status> {
+    match sensor_type {
+        proto::SensorType::Unspecified => Err(Status::invalid_argument("sensor type is required")),
+        proto::SensorType::Temperature => Ok(DomainSensorType::Temperature),
+        proto::SensorType::Pressure => Ok(DomainSensorType::Pressure),
+        proto::SensorType::Vibration => Ok(DomainSensorType::Vibration),
+    }
+}
+
+fn require_sensor_status(status: proto::SensorStatus) -> Result<DomainSensorStatus, Status> {
+    match status {
+        proto::SensorStatus::Unspecified => Err(Status::invalid_argument("sensor status is required")),
+        proto::SensorStatus::Active => Ok(DomainSensorStatus::Active),
+        proto::SensorStatus::Inactive => Ok(DomainSensorStatus::Inactive),
+        proto::SensorStatus::Maintenance => Ok(DomainSensorStatus::Maintenance),
     }
 }
 

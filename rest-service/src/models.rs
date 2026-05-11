@@ -9,6 +9,15 @@ pub enum SensorType {
     Vibration,
 }
 
+impl SensorType {
+    pub fn validate_required(&self) -> Result<(), &'static str> {
+        match self {
+            Self::Unspecified => Err("sensor type is required"),
+            _ => Ok(()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SensorStatus {
@@ -16,6 +25,15 @@ pub enum SensorStatus {
     Active,
     Inactive,
     Maintenance,
+}
+
+impl SensorStatus {
+    pub fn validate_required(&self) -> Result<(), &'static str> {
+        match self {
+            Self::Unspecified => Err("sensor status is required"),
+            _ => Ok(()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

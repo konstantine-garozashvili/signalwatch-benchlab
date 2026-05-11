@@ -9,18 +9,19 @@ pub struct Sensor {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SensorType {
     Temperature,
-    Humidity,
     Pressure,
-    Motion,
+    Vibration,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SensorStatus {
     Active,
     Inactive,
-    Faulty,
+    Maintenance,
 }
 
 #[cfg(test)]
@@ -32,7 +33,7 @@ mod tests {
         let sensor_type = SensorType::Temperature;
 
         assert_eq!(sensor_type, SensorType::Temperature);
-        assert_ne!(sensor_type, SensorType::Humidity);
+        assert_ne!(sensor_type, SensorType::Pressure);
     }
 
     #[test]
@@ -53,8 +54,8 @@ mod tests {
     fn sensor_json_roundtrip_preserves_values() {
         let sensor = Sensor {
             id: "sensor-002".to_string(),
-            name: "Warehouse humidity".to_string(),
-            sensor_type: SensorType::Humidity,
+            name: "Vibration probe".to_string(),
+            sensor_type: SensorType::Vibration,
             status: SensorStatus::Inactive,
         };
 

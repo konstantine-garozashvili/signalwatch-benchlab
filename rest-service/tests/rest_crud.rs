@@ -158,3 +158,105 @@ async fn missing_and_invalid_sensor_ids_return_expected_codes() {
     let missing_body: Value = response_json(missing_response).await;
     assert_eq!(missing_body["error"], "sensor not found");
 }
+
+#[tokio::test]
+async fn create_with_unspecified_sensor_type_returns_bad_request() {
+    let app = build_app(AppState::new());
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/sensors")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "name": "Invalid",
+                        "sensor_type": "unspecified",
+                        "location": "lab-a",
+                        "unit": "celsius"
+                    })
+                    .to_string(),
+                ))
+                .expect("request should be built"),
+        )
+        .await
+        .expect("request should return a response");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body: Value = response_json(response).await;
+    assert_eq!(body["error"], "sensor type is required");
+}
+
+#[tokio::test]
+async fn update_with_unspecified_status_returns_bad_request() {
+    let app = build_app(AppState::new());
+
+    let create_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/sensors")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "name": "Room temp",
+                        "sensor_type": "temperature",
+                        "location": "lab-a",
+                        "unit": "celsius"
+                    })
+                    .to_string(),
+                ))
+                .expect("create request should be built"),
+        )
+        .await
+        .expect("create endpoint should respond");
+    let created: SensorResponse = response_json(create_response).await;
+
+    let update_response = app
+        .oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri(format!("/sensors/{}", created.sensor.id))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "name": "Room temp",
+                        "sensor_type": "temperature",
+                        "location": "lab-a",
+                        "unit": "celsius",
+                        "status": "unspecified"
+                    })
+                    .to_string(),
+                ))
+                .expect("update request should be built"),
+        )
+        .await
+        .expect("update endpoint should respond");
+
+    assert_eq!(update_response.status(), StatusCode::BAD_REQUEST);
+    let body: Value = response_json(update_response).await;
+    assert_eq!(body["error"], "sensor status is required");
+}
+
+#[tokio::test]
+async fn malformed_json_body_returns_bad_request() {
+    let app = build_app(AppState::new());
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/sensors")
+                .header("content-type", "application/json")
+                .body(Body::from("{\"name\":\"bad\""))
+                .expect("request should be built"),
+        )
+        .await
+        .expect("request should return a response");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body: Value = response_json(response).await;
+    assert_eq!(body["error"], "invalid request body");
+}

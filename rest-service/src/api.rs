@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{rejection::JsonRejection, Path, State},
     http::StatusCode,
     routing::{get, post},
     Json, Router,
@@ -27,8 +27,14 @@ pub fn routes() -> Router<AppState> {
 
 async fn create_sensor(
     State(state): State<AppState>,
-    Json(request): Json<CreateSensorRequest>,
+    request: Result<Json<CreateSensorRequest>, JsonRejection>,
 ) -> Result<(StatusCode, Json<SensorResponse>), ApiError> {
+    let request = request.map_err(|_| ApiError::invalid_request_body())?.0;
+    request
+        .sensor_type
+        .validate_required()
+        .map_err(|message| ApiError::BadRequest(message.to_string()))?;
+
     let id = Uuid::new_v4();
     let now = Utc::now().to_rfc3339();
 
@@ -68,8 +74,18 @@ async fn get_sensor(
 async fn update_sensor(
     State(state): State<AppState>,
     Path(id): Path<String>,
-    Json(request): Json<UpdateSensorRequest>,
+    request: Result<Json<UpdateSensorRequest>, JsonRejection>,
 ) -> Result<(StatusCode, Json<SensorResponse>), ApiError> {
+    let request = request.map_err(|_| ApiError::invalid_request_body())?.0;
+    request
+        .sensor_type
+        .validate_required()
+        .map_err(|message| ApiError::BadRequest(message.to_string()))?;
+    request
+        .status
+        .validate_required()
+        .map_err(|message| ApiError::BadRequest(message.to_string()))?;
+
     let sensor_id = Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid sensor id".into()))?;
     let mut sensor = state.get_sensor(&sensor_id).await.ok_or(ApiError::NotFound)?;
 

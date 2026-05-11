@@ -124,6 +124,25 @@ pub struct Sensor {
 
 ---
 
+## Alignement REST et gRPC pour le benchmark
+
+Pour garantir une comparaison juste entre les deux services, les regles metier et les categories d'erreur sont alignees sur les memes cas fonctionnels.
+
+- Valeurs enum `unspecified` refusees pour `sensor_type` (create/update) et `status` (update)
+- Identifiant invalide:
+  - REST: `400 Bad Request`
+  - gRPC: `InvalidArgument`
+- Ressource absente:
+  - REST: `404 Not Found`
+  - gRPC: `NotFound`
+- Payload/mapping invalide:
+  - REST: `400 Bad Request`
+  - gRPC: `InvalidArgument`
+
+Les tests d'integration de `rest-service` et `grpc-service` couvrent ces cas de conformance en plus du flux CRUD nominal.
+
+---
+
 ## Contrat gRPC (proto)
 
 Le contrat gRPC est defini dans `proto/sensor.proto`.

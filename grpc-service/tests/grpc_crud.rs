@@ -113,3 +113,75 @@ async fn invalid_and_missing_ids_return_expected_codes() {
         .expect_err("missing id should fail");
     assert_eq!(missing_error.code(), Code::NotFound);
 }
+
+#[tokio::test]
+async fn create_and_update_reject_unspecified_enums() {
+    let mut client = spawn_test_server().await;
+
+    let create_unspecified_error = client
+        .create_sensor(CreateSensorRequest {
+            name: "Invalid".into(),
+            sensor_type: SensorType::Unspecified as i32,
+            location: "lab-a".into(),
+            unit: "celsius".into(),
+        })
+        .await
+        .expect_err("unspecified sensor type should fail");
+    assert_eq!(create_unspecified_error.code(), Code::InvalidArgument);
+
+    let created = client
+        .create_sensor(CreateSensorRequest {
+            name: "Room temp".into(),
+            sensor_type: SensorType::Temperature as i32,
+            location: "lab-a".into(),
+            unit: "celsius".into(),
+        })
+        .await
+        .expect("valid create should succeed")
+        .into_inner()
+        .sensor
+        .expect("create should return sensor");
+
+    let update_unspecified_type_error = client
+        .update_sensor(UpdateSensorRequest {
+            id: created.id.clone(),
+            name: "Room temp".into(),
+            sensor_type: SensorType::Unspecified as i32,
+            location: "lab-a".into(),
+            unit: "celsius".into(),
+            status: SensorStatus::Active as i32,
+        })
+        .await
+        .expect_err("unspecified sensor type should fail");
+    assert_eq!(update_unspecified_type_error.code(), Code::InvalidArgument);
+
+    let update_unspecified_status_error = client
+        .update_sensor(UpdateSensorRequest {
+            id: created.id,
+            name: "Room temp".into(),
+            sensor_type: SensorType::Temperature as i32,
+            location: "lab-a".into(),
+            unit: "celsius".into(),
+            status: SensorStatus::Unspecified as i32,
+        })
+        .await
+        .expect_err("unspecified sensor status should fail");
+    assert_eq!(update_unspecified_status_error.code(), Code::InvalidArgument);
+}
+
+#[tokio::test]
+async fn invalid_enum_values_return_invalid_argument() {
+    let mut client = spawn_test_server().await;
+
+    let error = client
+        .create_sensor(CreateSensorRequest {
+            name: "Invalid".into(),
+            sensor_type: 99,
+            location: "lab-a".into(),
+            unit: "celsius".into(),
+        })
+        .await
+        .expect_err("invalid enum should fail");
+
+    assert_eq!(error.code(), Code::InvalidArgument);
+}

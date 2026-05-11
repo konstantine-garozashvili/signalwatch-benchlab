@@ -12,6 +12,12 @@ pub enum ApiError {
     NotFound,
 }
 
+impl ApiError {
+    pub fn invalid_request_body() -> Self {
+        Self::BadRequest("invalid request body".to_string())
+    }
+}
+
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         match self {
