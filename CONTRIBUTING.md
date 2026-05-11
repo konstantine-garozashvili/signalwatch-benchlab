@@ -90,9 +90,9 @@ chore: mise a jour dependances Cargo.toml
 
 ## Standards de code Rust
 
-- Formatter avec `cargo fmt` avant chaque commit
-- Verifier avec `cargo clippy -- -D warnings` (zero avertissement tolere)
-- Tous les tests doivent passer : `cargo test`
+- Verifier le formatage avec `cargo fmt --all -- --check`
+- Verifier avec `cargo clippy --all-targets --all-features -- -D warnings` (zero avertissement tolere)
+- Tous les tests doivent passer avec `cargo test --all --verbose`
 - Documenter les fonctions publiques avec des commentaires `///`
 
 ---
@@ -100,18 +100,25 @@ chore: mise a jour dependances Cargo.toml
 ## Lancer les verifications localement
 
 ```bash
-# Formatage
-cargo fmt --all
+# Formatage (identique a la CI)
+cargo fmt --all -- --check
 
-# Linting
+# Linting (identique a la CI)
 cargo clippy --all-targets --all-features -- -D warnings
 
-# Tests
-cargo test --all
+# Tests (identique a la CI)
+cargo test --all --verbose
 
 # Build complet
 cargo build --release
 ```
+
+## Branch protection GitHub (`main`)
+
+Pour garder un pipeline vert sur `main`, configurer les checks CI suivants comme **Required status checks**:
+- `Formatage (cargo fmt)`
+- `Linting (cargo clippy)`
+- `Tests (cargo test)`
 
 ---
 

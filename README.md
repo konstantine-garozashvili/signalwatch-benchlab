@@ -239,6 +239,21 @@ cargo build -p grpc-service
 
 Consulter [CONTRIBUTING.md](./CONTRIBUTING.md) pour les conventions de commits, la strategie de branches et le processus de revue de code.
 
+## Qualite et CI
+
+La CI GitHub Actions execute les controles suivants sur `main` et `develop`:
+- `cargo fmt --all -- --check`
+- `cargo clippy --all-targets --all-features -- -D warnings`
+- `cargo test --all --verbose`
+
+Verification locale recommandee avant une PR:
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all --verbose
+```
+
 ---
 
 ## Securite

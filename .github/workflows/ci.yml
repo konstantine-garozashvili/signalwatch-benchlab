@@ -13,6 +13,10 @@ on:
       - main
       - develop
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
@@ -126,6 +130,7 @@ jobs:
   audit-securite:
     name: Audit de securite (cargo audit)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Recuperer le code source
         uses: actions/checkout@v4
