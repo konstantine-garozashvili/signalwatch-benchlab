@@ -1,7 +1,10 @@
-pub mod proto {
-    tonic::include_proto!("signalwatch.sensor.v1");
-}
+use std::net::SocketAddr;
 
-fn main() {
-    println!("{}: grpc-service started", common::service_name());
+use grpc_service::{serve, state::AppState};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let addr: SocketAddr = "0.0.0.0:50051".parse()?;
+    println!("{}: grpc-service listening on {}", common::service_name(), addr);
+    serve(addr, AppState::new()).await
 }

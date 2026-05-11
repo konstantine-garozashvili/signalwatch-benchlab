@@ -322,11 +322,15 @@ dependencies = [
 name = "grpc-service"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "common",
  "prost",
  "prost-build",
+ "tokio",
+ "tokio-stream",
  "tonic",
  "tonic-build",
+ "uuid",
 ]
 
 [[package]]
