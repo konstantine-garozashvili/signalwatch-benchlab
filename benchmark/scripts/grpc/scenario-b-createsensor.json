@@ -1,0 +1,6 @@
+{
+  "name": "grpc-bench-create",
+  "sensor_type": "SENSOR_TYPE_TEMPERATURE",
+  "location": "atelier-a",
+  "unit": "C"
+}

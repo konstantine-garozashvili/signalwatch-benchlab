@@ -74,6 +74,23 @@ cargo run -p grpc-service
 make benchmark-all
 ```
 
+Commandes disponibles:
+
+```bash
+make benchmark-rest
+make benchmark-grpc
+make benchmark-all
+```
+
+Les scripts utilisent:
+- `benchmark/scripts/run-rest.sh`
+- `benchmark/scripts/run-grpc.sh`
+- `benchmark/scripts/run-all.sh`
+
+Les resultats sont exportes automatiquement sous:
+- `benchmark/results/rest`
+- `benchmark/results/grpc`
+
 ---
 
 ## Scenarios de benchmark
@@ -83,6 +100,32 @@ make benchmark-all
 | A - Lecture unitaire | GET /sensors/:id vs GetSensor | 1 000 | 10 |
 | B - Ecriture | POST /sensors vs CreateSensor | 500 | 5 |
 | C - Charge progressive | Montee de 10 a 100 connexions | variable | 10 -> 100 |
+
+### Parametrage (variables d'environnement)
+
+Variables communes:
+- `BENCH_TIMESTAMP` : suffixe des fichiers de resultats (defaut: date courante `YYYYMMDD-HHMMSS`)
+- `A_REQUESTS` / `A_CONCURRENCY` : scenario A (defaut: `1000` / `10`)
+- `B_REQUESTS` / `B_CONCURRENCY` : scenario B (defaut: `500` / `5`)
+- `C_START_CONCURRENCY` / `C_END_CONCURRENCY` : scenario C (defaut: `10` / `100`)
+
+Variables REST:
+- `REST_BASE_URL` (defaut: `http://127.0.0.1:8080`)
+- `C_MID_CONCURRENCY` (defaut: `50`)
+- `C_STAGE_1_DURATION`, `C_STAGE_2_DURATION`, `C_STAGE_3_DURATION`, `C_STAGE_4_DURATION`
+
+Variables gRPC:
+- `GRPC_HOST` (defaut: `127.0.0.1:50051`)
+- `C_CONCURRENCY_STEP` (defaut: `10`)
+- `C_REQUESTS_PER_STEP` (defaut: `200`)
+- `SENSOR_ID` (optionnel, sinon seed automatique via `CreateSensor`)
+
+Exemple:
+
+```bash
+A_REQUESTS=2000 A_CONCURRENCY=20 make benchmark-rest
+GRPC_HOST=127.0.0.1:50051 C_REQUESTS_PER_STEP=400 make benchmark-grpc
+```
 
 ### Metriques collectees
 
