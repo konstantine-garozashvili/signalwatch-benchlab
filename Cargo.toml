@@ -1,0 +1,3 @@
+[workspace]
+members = ["rest-service", "grpc-service", "common"]
+resolver = "2"
