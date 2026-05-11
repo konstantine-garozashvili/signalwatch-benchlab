@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package signalwatch.sensor.v1;
+
+service SensorService {
+  rpc CreateSensor(CreateSensorRequest) returns (CreateSensorResponse);
+  rpc ListSensors(ListSensorsRequest) returns (ListSensorsResponse);
+  rpc GetSensor(GetSensorRequest) returns (GetSensorResponse);
+  rpc UpdateSensor(UpdateSensorRequest) returns (UpdateSensorResponse);
+  rpc DeleteSensor(DeleteSensorRequest) returns (DeleteSensorResponse);
+}
+
+enum SensorType {
+  SENSOR_TYPE_UNSPECIFIED = 0;
+  SENSOR_TYPE_TEMPERATURE = 1;
+  SENSOR_TYPE_PRESSURE = 2;
+  SENSOR_TYPE_VIBRATION = 3;
+}
+
+enum SensorStatus {
+  SENSOR_STATUS_UNSPECIFIED = 0;
+  SENSOR_STATUS_ACTIVE = 1;
+  SENSOR_STATUS_INACTIVE = 2;
+  SENSOR_STATUS_MAINTENANCE = 3;
+}
+
+message Sensor {
+  string id = 1;
+  string name = 2;
+  SensorType sensor_type = 3;
+  string location = 4;
+  string unit = 5;
+  SensorStatus status = 6;
+  double last_value = 7;
+  string last_reading_at = 8;
+  string created_at = 9;
+}
+
+message CreateSensorRequest {
+  string name = 1;
+  SensorType sensor_type = 2;
+  string location = 3;
+  string unit = 4;
+}
+
+message CreateSensorResponse {
+  Sensor sensor = 1;
+}
+
+message ListSensorsRequest {}
+
+message ListSensorsResponse {
+  repeated Sensor sensors = 1;
+}
+
+message GetSensorRequest {
+  string id = 1;
+}
+
+message GetSensorResponse {
+  Sensor sensor = 1;
+}
+
+message UpdateSensorRequest {
+  string id = 1;
+  string name = 2;
+  SensorType sensor_type = 3;
+  string location = 4;
+  string unit = 5;
+  SensorStatus status = 6;
+}
+
+message UpdateSensorResponse {
+  Sensor sensor = 1;
+}
+
+message DeleteSensorRequest {
+  string id = 1;
+}
+
+message DeleteSensorResponse {}
