@@ -124,6 +124,31 @@ pub struct Sensor {
 
 ---
 
+## Contrat gRPC (proto)
+
+Le contrat gRPC est defini dans `proto/sensor.proto`.
+
+- Package: `signalwatch.sensor.v1`
+- Service: `SensorService`
+- RPC:
+  - `CreateSensor`: creer un capteur
+  - `ListSensors`: lister tous les capteurs
+  - `GetSensor`: lire un capteur par identifiant
+  - `UpdateSensor`: mettre a jour un capteur
+  - `DeleteSensor`: supprimer un capteur
+
+La generation du code Rust (Tonic/Prost) est configuree via `grpc-service/build.rs`.
+
+```bash
+# Verifier la compilation et generer le code depuis le proto
+cargo check -p grpc-service
+
+# Compilation complete avec generation proto
+cargo build -p grpc-service
+```
+
+---
+
 ## Stack technique
 
 | Composant | Technologie |
