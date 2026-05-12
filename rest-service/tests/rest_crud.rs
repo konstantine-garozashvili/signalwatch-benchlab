@@ -50,7 +50,10 @@ async fn sensor_crud_flow_works() {
     assert_eq!(create_response.status(), StatusCode::CREATED);
     let created: SensorResponse = response_json(create_response).await;
     assert_eq!(created.sensor.name, "Room temp");
-    assert_eq!(created.sensor.status, rest_service::models::SensorStatus::Active);
+    assert_eq!(
+        created.sensor.status,
+        rest_service::models::SensorStatus::Active
+    );
     let sensor_id = created.sensor.id.clone();
 
     let list_response = app
@@ -108,7 +111,10 @@ async fn sensor_crud_flow_works() {
     assert_eq!(update_response.status(), StatusCode::OK);
     let updated: SensorResponse = response_json(update_response).await;
     assert_eq!(updated.sensor.name, "Rack pressure");
-    assert_eq!(updated.sensor.status, rest_service::models::SensorStatus::Maintenance);
+    assert_eq!(
+        updated.sensor.status,
+        rest_service::models::SensorStatus::Maintenance
+    );
 
     let delete_response = app
         .clone()

@@ -101,6 +101,19 @@ def parse_rest(path):
     }
 
 
+def grpc_latency_ms(lat_dist, percentile):
+    if isinstance(lat_dist, dict):
+        return lat_dist.get(str(percentile), lat_dist.get(percentile))
+    if isinstance(lat_dist, list):
+        for row in lat_dist:
+            if row.get("percentage") == percentile:
+                v = row.get("latency")
+                if v is None:
+                    return None
+                return float(v) / 1_000_000.0
+    return None
+
+
 def parse_grpc(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -108,13 +121,19 @@ def parse_grpc(path):
     except (OSError, json.JSONDecodeError):
         return None
 
-    lat = data.get("latencyDistribution", {})
+    lat = data.get("latencyDistribution") or {}
+    err = data.get("errorRatio")
+    if err is None:
+        ed = data.get("errorDistribution") or {}
+        n = int(data.get("count") or 0)
+        err = sum(float(v) for v in ed.values()) / float(n) if n and ed else 0.0
+
     return {
-        "lat_p50": lat.get("50"),
-        "lat_p95": lat.get("95"),
-        "lat_p99": lat.get("99"),
+        "lat_p50": grpc_latency_ms(lat, 50),
+        "lat_p95": grpc_latency_ms(lat, 95),
+        "lat_p99": grpc_latency_ms(lat, 99),
         "rps": data.get("rps"),
-        "err": data.get("errorRatio"),
+        "err": err,
     }
 
 

@@ -1,8 +1,16 @@
-# Documents
+# Documents du projet
 
-Ce dossier contient les livrables documentaires du benchmark:
+## Livrables PDF
 
-- `rapport-veille.pdf` (rapport 8-10 pages)
-- `presentation.pdf` (support de presentation)
+| Fichier | Description |
+|---------|-------------|
+| [rapport-veille.pdf](./rapport-veille.pdf) | Rapport de synthese (contexte, methodologie, resultats de reference, analyse). |
+| [presentation.pdf](./presentation.pdf) | Support de presentation condense (objectifs, methode, resultats, recommandations). |
 
-En attendant les versions finales PDF, ce fichier sert de placeholder.
+## Guides lies au benchmark
+
+| Fichier | Description |
+|---------|-------------|
+| [benchmark-reproduction.md](./benchmark-reproduction.md) | Runbook pas-a-pas pour rejouer les benchmarks et regenerer `benchmark/results/report-latest.md`. |
+
+Le rapport Markdown genere automatiquement apres les benches se trouve a la racine du depot sous `benchmark/results/report-latest.md`.

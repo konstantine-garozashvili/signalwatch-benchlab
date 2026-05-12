@@ -12,7 +12,9 @@ async fn spawn_test_server() -> SensorServiceClient<tonic::transport::Channel> {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
         .expect("test listener should bind");
-    let addr = listener.local_addr().expect("test listener should have address");
+    let addr = listener
+        .local_addr()
+        .expect("test listener should have address");
     drop(listener);
 
     tokio::spawn(async move {
@@ -166,7 +168,10 @@ async fn create_and_update_reject_unspecified_enums() {
         })
         .await
         .expect_err("unspecified sensor status should fail");
-    assert_eq!(update_unspecified_status_error.code(), Code::InvalidArgument);
+    assert_eq!(
+        update_unspecified_status_error.code(),
+        Code::InvalidArgument
+    );
 }
 
 #[tokio::test]

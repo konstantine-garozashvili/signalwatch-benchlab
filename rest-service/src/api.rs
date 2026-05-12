@@ -66,8 +66,12 @@ async fn get_sensor(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<(StatusCode, Json<SensorResponse>), ApiError> {
-    let sensor_id = Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid sensor id".into()))?;
-    let sensor = state.get_sensor(&sensor_id).await.ok_or(ApiError::NotFound)?;
+    let sensor_id =
+        Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid sensor id".into()))?;
+    let sensor = state
+        .get_sensor(&sensor_id)
+        .await
+        .ok_or(ApiError::NotFound)?;
     Ok((StatusCode::OK, Json(SensorResponse { sensor })))
 }
 
@@ -86,8 +90,12 @@ async fn update_sensor(
         .validate_required()
         .map_err(|message| ApiError::BadRequest(message.to_string()))?;
 
-    let sensor_id = Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid sensor id".into()))?;
-    let mut sensor = state.get_sensor(&sensor_id).await.ok_or(ApiError::NotFound)?;
+    let sensor_id =
+        Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid sensor id".into()))?;
+    let mut sensor = state
+        .get_sensor(&sensor_id)
+        .await
+        .ok_or(ApiError::NotFound)?;
 
     sensor.name = request.name;
     sensor.sensor_type = request.sensor_type;
@@ -104,7 +112,8 @@ async fn delete_sensor(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
-    let sensor_id = Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid sensor id".into()))?;
+    let sensor_id =
+        Uuid::parse_str(&id).map_err(|_| ApiError::BadRequest("invalid sensor id".into()))?;
     let deleted = state.delete_sensor(&sensor_id).await;
     if deleted {
         Ok(StatusCode::NO_CONTENT)
