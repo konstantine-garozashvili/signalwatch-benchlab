@@ -49,8 +49,7 @@ run_scenario() {
   local output_file="$2"
   shift 2
 
-  K6_NO_USAGE_REPORT=1 \
-    k6 run "${SCRIPT_PATH}" \
+  k6 run "${SCRIPT_PATH}" \
     -e REST_BASE_URL="${REST_BASE_URL}" \
     -e BENCH_SCENARIO="${scenario}" \
     -e BENCH_TIMESTAMP="${BENCH_TIMESTAMP}" \

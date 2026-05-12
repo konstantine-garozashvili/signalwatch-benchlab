@@ -22,8 +22,12 @@ function buildOptions() {
 export const options = buildOptions();
 
 function createPayload() {
+  const unique =
+    typeof __ITER !== "undefined" && typeof __VU !== "undefined"
+      ? `${__VU}-${__ITER}`
+      : `setup-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
   return JSON.stringify({
-    name: `bench-${scenario}-${Date.now()}-${__VU}-${__ITER}`,
+    name: `bench-${scenario}-${unique}`,
     sensor_type: "temperature",
     location: "atelier-a",
     unit: "C",

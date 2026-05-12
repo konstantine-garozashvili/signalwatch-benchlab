@@ -58,7 +58,7 @@ PY
 }
 
 run_ghz() {
-  ghz --plaintext \
+  ghz --insecure \
     --proto "${PROTO_PATH}" \
     --call "$1" \
     --total "$2" \
@@ -69,43 +69,12 @@ run_ghz() {
     "${GRPC_HOST}"
 }
 
-extract_seed_sensor_id() {
-  local seed_output="$1"
-  python3 - "$seed_output" <<'PY'
-import json
-import re
-import sys
-
-path = sys.argv[1]
-with open(path, "r", encoding="utf-8") as f:
-    data = f.read()
-
-try:
-    parsed = json.loads(data)
-except json.JSONDecodeError:
-    parsed = None
-
-if parsed is not None:
-    stack = [parsed]
-    while stack:
-        item = stack.pop()
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if key == "id" and isinstance(value, str):
-                    print(value)
-                    sys.exit(0)
-                stack.append(value)
-        elif isinstance(item, list):
-            stack.extend(item)
-
-match = re.search(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", data)
-if match:
-    print(match.group(0))
-    sys.exit(0)
-
-print("Unable to extract sensor id from seed output", file=sys.stderr)
-sys.exit(1)
-PY
+seed_sensor_id() {
+  if ! command -v cargo >/dev/null 2>&1; then
+    echo "cargo is required to seed SENSOR_ID but was not found in PATH" >&2
+    exit 1
+  fi
+  (cd "${ROOT_DIR}" && GRPC_HOST="${GRPC_HOST}" cargo run --quiet -p grpc-service --bin seed_sensor)
 }
 
 prepare_payload_with_sensor_id() {
@@ -117,15 +86,7 @@ prepare_payload_with_sensor_id() {
 
 wait_for_grpc
 
-seed_output="${RESULTS_ROOT}/${BENCH_TIMESTAMP}-seed-create.json"
-run_ghz \
-  "signalwatch.sensor.v1.SensorService/CreateSensor" \
-  "1" \
-  "1" \
-  "${GRPC_PAYLOAD_DIR}/scenario-b-createsensor.json" \
-  "${seed_output}"
-
-SENSOR_ID="${SENSOR_ID:-$(extract_seed_sensor_id "${seed_output}")}"
+SENSOR_ID="${SENSOR_ID:-$(seed_sensor_id)}"
 
 scenario_a_payload="$(mktemp)"
 scenario_c_payload="$(mktemp)"

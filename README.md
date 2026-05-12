@@ -102,6 +102,40 @@ Fichier de sortie:
 
 ---
 
+## Livrables documentaires
+
+- [Rapport de veille](./docs/rapport-veille.pdf) - synthese ecrite (contexte, methode, analyse).
+- [Presentation](./docs/presentation.pdf) - support de restitution condense.
+- [Guide de reproduction des benchmarks](./docs/benchmark-reproduction.md) — runbook contributeur (`make run`, `make bench`, `make report`).
+
+Rapport Markdown genere apres coup : [benchmark/results/report-latest.md](./benchmark/results/report-latest.md).
+
+---
+
+## Resultats benchmark (instantane de reference)
+
+Un jeu de resultats complet est archive sous le suffixe de fichiers **`20260512-signalwatch-final`** (execution du 12 mai 2026 sur environnement de developpement ; les valeurs varient selon la machine).
+
+Extraits representatifs (detail et rampe complete dans le rapport) :
+
+| Scenario | REST (indicatif) | gRPC (indicatif) |
+|----------|------------------|------------------|
+| A - Lecture unitaire | p50 ~0,14 ms ; debit k6 ~43,7k req/s | p50 ~0,46 ms ; debit ghz ~16,3k req/s |
+| B - Ecriture | p50 ~0,13 ms ; debit k6 ~24,3k req/s | p50 ~0,22 ms ; debit ghz ~15,6k req/s |
+| C - Charge progressive | debit agrege k6 ~54,9k req/s sur la rampe testee | plusieurs fichiers `scenario-c-concurrency-*.json` ; p50 monte avec la concurrence (ex. ~4,8 ms a 100 connexions pour la derniere etape) |
+
+Les debits **k6** et **ghz** ne sont pas comparables comme un classement absolu : ils reflectent chaque outil et scenario. Utiliser surtout les latences et la stabilite des erreurs pour comparer les stacks dans ce depot.
+
+---
+
+## Recommandations
+
+- **REST** lorsque l'API doit rester accessible aux integrations HTTP classiques (reverse proxy, cache, outillage curl/OpenAPI) et lorsque l'equipe privilegie la lisibilite JSON et la velocite d'onboarding.
+- **gRPC** lorsque le contrat Protobuf est pilote par plusieurs equipes, que les messages compacts et HTTP/2 sont importants, et que la generation de code et `protoc` sont acceptees dans la chaine de livraison.
+- **Validation continue** : rejouer `make bench` avec un `BENCH_TIMESTAMP` fixe lors des changements critiques ; traiter les rapports comme indicatifs avant dimensionnement production.
+
+---
+
 ## Scenarios de benchmark
 
 | Scenario | Description | Requetes | Concurrence |

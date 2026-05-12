@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 use tonic::Status;
 use uuid::Uuid;
 
@@ -85,7 +87,9 @@ fn require_sensor_type(sensor_type: proto::SensorType) -> Result<DomainSensorTyp
 
 fn require_sensor_status(status: proto::SensorStatus) -> Result<DomainSensorStatus, Status> {
     match status {
-        proto::SensorStatus::Unspecified => Err(Status::invalid_argument("sensor status is required")),
+        proto::SensorStatus::Unspecified => {
+            Err(Status::invalid_argument("sensor status is required"))
+        }
         proto::SensorStatus::Active => Ok(DomainSensorStatus::Active),
         proto::SensorStatus::Inactive => Ok(DomainSensorStatus::Inactive),
         proto::SensorStatus::Maintenance => Ok(DomainSensorStatus::Maintenance),
