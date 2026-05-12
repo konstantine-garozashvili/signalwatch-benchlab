@@ -1,0 +1,26 @@
+$kind: http-request
+name: 'Get Sensor'
+method: GET
+url: '{{rest_base_url}}/sensors/{{sensor_id}}'
+order: 3000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200 OK", function () {
+        pm.response.to.have.status(200);
+      });
+
+      pm.test("Response contains correct sensor", function () {
+        var json = pm.response.json();
+        pm.expect(json).to.have.property("sensor");
+        pm.expect(json.sensor.id).to.eql(pm.environment.get("sensor_id"));
+      });
+
+      pm.test("Sensor has all required fields", function () {
+        var sensor = pm.response.json().sensor;
+        pm.expect(sensor).to.have.all.keys(
+          "id", "name", "sensor_type", "location", "unit",
+          "status", "last_value", "last_reading_at", "created_at"
+        );
+      });

@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: 1c896113-ca01-4b8e-8c9e-273c1e206f04
+
+localResources:
+  specs:
+    - ../proto/sensor.proto

@@ -1,0 +1,40 @@
+$kind: http-request
+name: 'Create Sensor'
+method: POST
+url: '{{rest_base_url}}/sensors'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Turbine-A3-Temp",
+      "sensor_type": "temperature",
+      "location": "Batiment C - Salle 12",
+      "unit": "C"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 201 Created", function () {
+        pm.response.to.have.status(201);
+      });
+
+      pm.test("Response contains sensor object", function () {
+        var json = pm.response.json();
+        pm.expect(json).to.have.property("sensor");
+        pm.expect(json.sensor).to.have.property("id");
+        pm.expect(json.sensor.name).to.eql("Turbine-A3-Temp");
+        pm.expect(json.sensor.sensor_type).to.eql("temperature");
+        pm.expect(json.sensor.status).to.eql("active");
+      });
+
+      // Save sensor ID for subsequent requests in this run
+      var json = pm.response.json();
+      if (json.sensor && json.sensor.id) {
+        pm.environment.set("sensor_id", json.sensor.id);
+        console.log("Saved sensor_id:", json.sensor.id);
+      }

@@ -1,0 +1,12 @@
+$kind: environment
+name: 'SignalWatch Dev'
+values:
+  - key: rest_base_url
+    value: 'http://127.0.0.1:8080'
+    enabled: true
+  - key: grpc_host
+    value: '127.0.0.1:50051'
+    enabled: true
+  - key: sensor_id
+    value: ''
+    enabled: true

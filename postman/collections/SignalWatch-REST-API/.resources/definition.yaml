@@ -1,0 +1,12 @@
+$kind: collection
+name: 'SignalWatch REST API'
+description: |-
+  CRUD operations for the SignalWatch REST service built with Axum (Rust).
+  Runs on {{rest_base_url}} (default: http://127.0.0.1:8080).
+
+  Run requests in order to test the full sensor lifecycle:
+  1. Create Sensor  → saves {{sensor_id}}
+  2. List Sensors
+  3. Get Sensor
+  4. Update Sensor
+  5. Delete Sensor

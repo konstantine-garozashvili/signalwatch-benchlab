@@ -1,0 +1,22 @@
+$kind: http-request
+name: 'List Sensors'
+method: GET
+url: '{{rest_base_url}}/sensors'
+order: 2000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200 OK", function () {
+        pm.response.to.have.status(200);
+      });
+
+      pm.test("Response contains sensors array", function () {
+        var json = pm.response.json();
+        pm.expect(json).to.have.property("sensors");
+        pm.expect(json.sensors).to.be.an("array");
+      });
+
+      pm.test("Response time is acceptable", function () {
+        pm.expect(pm.response.responseTime).to.be.below(500);
+      });
