@@ -1,6 +1,6 @@
 # Guide de reproduction des benchmarks
 
-Ce guide permet a un nouveau contributeur de regenerer les memes types d'artefacts que ceux decrits dans le README (JSON bruts, rapport Markdown consolide).
+Ce guide permet a un nouveau contributeur de regenerer les memes types d'artefacts que ceux decrits dans le README (JSON bruts, rapports Markdown + HTML consolides).
 
 ## Prerequis verifies
 
@@ -68,13 +68,15 @@ Avec au moins un jeu REST **et** un jeu gRPC partageant le meme `<timestamp>` da
 make report
 ```
 
-Fichier produit : `benchmark/results/report-latest.md` (ecrase a chaque execution).
+Fichiers produits (ecrases a chaque execution) :
+- `benchmark/results/report-latest.md`
+- `benchmark/results/report-latest.html`
 
 ## Etape 4 : controles rapides
 
 - [ ] Les services repondent avant bench (`curl` sur `/sensors`, port gRPC ouvert).
 - [ ] Des fichiers `*-scenario-*.json` existent sous `benchmark/results/rest` et `benchmark/results/grpc`.
-- [ ] `make report` se termine sans erreur et le tableau gRPC liste les lignes `C-CONCURRENCY-*`.
+- [ ] `make report` se termine sans erreur, genere `report-latest.md` et `report-latest.html`, et le tableau gRPC liste les lignes `C-CONCURRENCY-*`.
 - [ ] Optionnel : `cargo test --all --verbose` pour valider le depot hors charge.
 
 ## Depannage
