@@ -139,6 +139,25 @@ def parse_grpc(path):
     }
 
 
+def parse_rest_payload(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    m = data.get("metrics", {})
+    received = m.get("data_received", {}).get("count")
+    reqs = m.get("http_reqs", {}).get("count")
+    if received and reqs and float(reqs) > 0:
+        return float(received) / float(reqs)
+    return None
+
+
+GRPC_EST_BYTES = 153
+EVENTS_PER_MIN = 10_000
+MINUTES_PER_YEAR = 60 * 24 * 365
+
+
 rest_files = sorted(glob.glob(os.path.join(rest_dir, f"{ts}-scenario-*.json")))
 grpc_files = sorted(glob.glob(os.path.join(grpc_dir, f"{ts}-scenario-*.json")))
 
@@ -151,6 +170,9 @@ grpc_rows = []
 for path in grpc_files:
     scenario = os.path.basename(path).split("-scenario-")[1].replace(".json", "").upper()
     grpc_rows.append({"scenario": scenario, "parsed": parse_grpc(path)})
+
+rest_a_path = os.path.join(rest_dir, f"{ts}-scenario-a.json")
+rest_a_bytes = parse_rest_payload(rest_a_path) if os.path.exists(rest_a_path) else None
 
 generated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -202,6 +224,38 @@ def render_markdown():
     else:
         lines.extend(["## gRPC", "", "_Aucun resultat gRPC pour ce timestamp._", ""])
 
+    lines.append("## Eco-conception : taille des payloads")
+    lines.append("")
+    if rest_a_bytes is not None:
+        ratio = rest_a_bytes / GRPC_EST_BYTES
+        rest_min = EVENTS_PER_MIN * rest_a_bytes / 1_000_000
+        grpc_min = EVENTS_PER_MIN * GRPC_EST_BYTES / 1_000_000
+        rest_yr = rest_min * MINUTES_PER_YEAR / 1_000
+        grpc_yr = grpc_min * MINUTES_PER_YEAR / 1_000
+        saving_yr = rest_yr - grpc_yr
+        lines.extend([
+            "| Protocole | Taille reponse GET /sensor (mesuree) | Source |",
+            "|---|---:|---|",
+            f"| REST (JSON + HTTP/1.1) | {rest_a_bytes:.0f} B/req | k6 data_received / http_reqs |",
+            f"| gRPC (Protobuf + HTTP/2) | ~{GRPC_EST_BYTES} B/req | estimation schema .proto |",
+            f"| Ratio REST/gRPC | **{ratio:.1f}x** | — |",
+            "",
+            f"> Extrapolation SignalWatch ({EVENTS_PER_MIN:,} evenements/min, 24h/24, 365j/an)",
+            ">",
+            "> | Protocole | Bande passante/min | Par an |",
+            "> |---|---:|---:|",
+            f"> | REST | {rest_min:.2f} MB/min | {rest_yr:.0f} GB/an |",
+            f"> | gRPC | {grpc_min:.2f} MB/min | {grpc_yr:.0f} GB/an |",
+            f"> | **Economie gRPC** | {rest_min - grpc_min:.2f} MB/min | **{saving_yr:.0f} GB/an** |",
+            "",
+            "> _Note : la taille REST inclut les en-tetes HTTP/1.1 (~150 B) + corps JSON (~260 B).",
+            "> La taille gRPC est une estimation : corps Protobuf (~123 B) + en-tetes HTTP/2 HPACK (~30 B).",
+            "> La mesure exacte des octets gRPC necessite un proxy reseau (tcpdump/Wireshark)._",
+        ])
+    else:
+        lines.append("_Donnees de payload non disponibles pour ce timestamp._")
+    lines.append("")
+
     return "\n".join(lines) + "\n"
 
 
@@ -236,6 +290,41 @@ def html_table_rows(rows):
 def render_html():
     escaped_ts = html.escape(ts)
     escaped_generated_at = html.escape(generated_at)
+    if rest_a_bytes is not None:
+        ratio = rest_a_bytes / GRPC_EST_BYTES
+        rest_min = EVENTS_PER_MIN * rest_a_bytes / 1_000_000
+        grpc_min = EVENTS_PER_MIN * GRPC_EST_BYTES / 1_000_000
+        rest_yr = rest_min * MINUTES_PER_YEAR / 1_000
+        grpc_yr = grpc_min * MINUTES_PER_YEAR / 1_000
+        saving_yr = rest_yr - grpc_yr
+        eco_block = (
+            "<table><thead><tr>"
+            "<th>Protocole</th><th>Taille reponse GET /sensor</th><th>Source</th>"
+            "</tr></thead><tbody>"
+            f"<tr><td>REST (JSON + HTTP/1.1)</td>"
+            f"<td class=\"num\">{rest_a_bytes:.0f} B/req</td>"
+            f"<td>k6 data_received / http_reqs</td></tr>"
+            f"<tr><td>gRPC (Protobuf + HTTP/2)</td>"
+            f"<td class=\"num\">~{GRPC_EST_BYTES} B/req</td>"
+            f"<td>estimation schema .proto</td></tr>"
+            f"<tr><td><strong>Ratio REST/gRPC</strong></td>"
+            f"<td class=\"num\"><strong>{ratio:.1f}x</strong></td><td>—</td></tr>"
+            "</tbody></table>"
+            f"<p><em>Extrapolation SignalWatch ({EVENTS_PER_MIN:,} evenements/min, 24h/24, 365j/an)</em></p>"
+            "<table><thead><tr>"
+            "<th>Protocole</th><th>Bande passante/min</th><th>Par an</th>"
+            "</tr></thead><tbody>"
+            f"<tr><td>REST</td><td class=\"num\">{rest_min:.2f} MB/min</td><td class=\"num\">{rest_yr:.0f} GB/an</td></tr>"
+            f"<tr><td>gRPC</td><td class=\"num\">{grpc_min:.2f} MB/min</td><td class=\"num\">{grpc_yr:.0f} GB/an</td></tr>"
+            f"<tr><td><strong>Economie gRPC</strong></td>"
+            f"<td class=\"num\">{rest_min - grpc_min:.2f} MB/min</td>"
+            f"<td class=\"num\"><strong>{saving_yr:.0f} GB/an</strong></td></tr>"
+            "</tbody></table>"
+            "<p class=\"meta\"><em>Note : la taille REST inclut les en-tetes HTTP/1.1 (~150 B) + corps JSON (~260 B). "
+            "La taille gRPC est une estimation : corps Protobuf (~123 B) + en-tetes HTTP/2 HPACK (~30 B).</em></p>"
+        )
+    else:
+        eco_block = "<p class=\"empty\"><em>Donnees de payload non disponibles pour ce timestamp.</em></p>"
     rest_block = (
         "<p class=\"empty\"><em>Aucun resultat REST pour ce timestamp.</em></p>"
         if not rest_rows
@@ -361,6 +450,8 @@ def render_html():
       {rest_block}
       <h2>gRPC</h2>
       {grpc_block}
+      <h2>Eco-conception : taille des payloads</h2>
+      {eco_block}
     </section>
   </main>
 </body>
