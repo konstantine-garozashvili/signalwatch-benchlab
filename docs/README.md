@@ -11,6 +11,6 @@
 
 | Fichier | Description |
 |---------|-------------|
-| [benchmark-reproduction.md](./benchmark-reproduction.md) | Runbook pas-a-pas pour rejouer les benchmarks et regenerer `benchmark/results/report-latest.md`. |
+| [benchmark-reproduction.md](./benchmark-reproduction.md) | Runbook pas-a-pas pour rejouer les benchmarks et regenerer `benchmark/results/report-latest.md` et `benchmark/results/report-latest.html`. |
 
-Le rapport Markdown genere automatiquement apres les benches se trouve a la racine du depot sous `benchmark/results/report-latest.md`.
+Les rapports Markdown et HTML generes automatiquement apres les benches se trouvent a la racine du depot sous `benchmark/results/report-latest.md` et `benchmark/results/report-latest.html`.

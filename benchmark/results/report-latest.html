@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rapport benchmark (latest)</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f7fb;
+      --fg: #1b2430;
+      --card: #ffffff;
+      --border: #d8dee9;
+      --muted: #4f5b66;
+      --header: #eef3ff;
+      --row-alt: #f9fbff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f141b;
+        --fg: #e6edf3;
+        --card: #151b23;
+        --border: #2a3441;
+        --muted: #9fb0c0;
+        --header: #1f2937;
+        --row-alt: #111923;
+      }
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1024px;
+      margin: 2rem auto;
+      padding: 0 1rem 2rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    }
+    h1, h2 {
+      margin: 0 0 0.75rem;
+      line-height: 1.25;
+    }
+    h2 {
+      margin-top: 1.75rem;
+    }
+    .meta {
+      margin: 0 0 0.25rem;
+      color: var(--muted);
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.9em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+    }
+    th {
+      background: var(--header);
+      font-weight: 600;
+    }
+    tbody tr:nth-child(even) {
+      background: var(--row-alt);
+    }
+    td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .empty {
+      color: var(--muted);
+      margin: 0.35rem 0 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Rapport benchmark (latest)</h1>
+      <p class="meta">Timestamp: <code>20260512-signalwatch-final</code></p>
+      <p class="meta">Genere le: <code>2026-05-13 07:26:38 UTC</code></p>
+      <h2>REST</h2>
+      <table><thead><tr><th>Scenario</th><th>p50 (ms)</th><th>p95 (ms)</th><th>p99 (ms)</th><th>Throughput (req/s)</th><th>Erreurs</th></tr></thead><tbody><tr><td>A</td><td class="num">0.14</td><td class="num">0.29</td><td class="num">n/a</td><td class="num">43694.62</td><td class="num">0.00%</td></tr>
+<tr><td>B</td><td class="num">0.13</td><td class="num">0.27</td><td class="num">n/a</td><td class="num">24340.48</td><td class="num">0.00%</td></tr>
+<tr><td>C</td><td class="num">0.50</td><td class="num">1.76</td><td class="num">n/a</td><td class="num">54909.98</td><td class="num">0.00%</td></tr></tbody></table>
+      <h2>gRPC</h2>
+      <table><thead><tr><th>Scenario</th><th>p50 (ms)</th><th>p95 (ms)</th><th>p99 (ms)</th><th>Throughput (req/s)</th><th>Erreurs</th></tr></thead><tbody><tr><td>A</td><td class="num">0.46</td><td class="num">0.80</td><td class="num">1.19</td><td class="num">16329.70</td><td class="num">0.00%</td></tr>
+<tr><td>B</td><td class="num">0.22</td><td class="num">0.42</td><td class="num">0.64</td><td class="num">15552.26</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-10</td><td class="num">0.47</td><td class="num">1.00</td><td class="num">1.07</td><td class="num">15575.21</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-100</td><td class="num">4.84</td><td class="num">7.70</td><td class="num">8.50</td><td class="num">14924.86</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-20</td><td class="num">0.91</td><td class="num">1.47</td><td class="num">1.58</td><td class="num">17239.21</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-30</td><td class="num">1.56</td><td class="num">2.17</td><td class="num">2.51</td><td class="num">15970.30</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-40</td><td class="num">1.93</td><td class="num">2.67</td><td class="num">3.60</td><td class="num">16746.68</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-50</td><td class="num">2.43</td><td class="num">4.48</td><td class="num">5.06</td><td class="num">15188.48</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-60</td><td class="num">3.08</td><td class="num">4.05</td><td class="num">5.12</td><td class="num">15309.05</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-70</td><td class="num">3.43</td><td class="num">5.27</td><td class="num">5.92</td><td class="num">15425.55</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-80</td><td class="num">3.35</td><td class="num">6.56</td><td class="num">8.03</td><td class="num">15561.88</td><td class="num">0.00%</td></tr>
+<tr><td>C-CONCURRENCY-90</td><td class="num">4.24</td><td class="num">7.63</td><td class="num">8.85</td><td class="num">14157.16</td><td class="num">0.00%</td></tr></tbody></table>
+    </section>
+  </main>
+</body>
+</html>

@@ -99,6 +99,7 @@ make report
 
 Fichier de sortie:
 - `benchmark/results/report-latest.md`
+- `benchmark/results/report-latest.html`
 
 ---
 
@@ -108,7 +109,9 @@ Fichier de sortie:
 - [Presentation](./docs/presentation.pdf) - support de restitution condense.
 - [Guide de reproduction des benchmarks](./docs/benchmark-reproduction.md) — runbook contributeur (`make run`, `make bench`, `make report`).
 
-Rapport Markdown genere apres coup : [benchmark/results/report-latest.md](./benchmark/results/report-latest.md).
+Rapports generes apres coup :
+- [benchmark/results/report-latest.md](./benchmark/results/report-latest.md)
+- [benchmark/results/report-latest.html](./benchmark/results/report-latest.html)
 
 ---
 

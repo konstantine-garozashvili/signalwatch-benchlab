@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REST_DIR="${ROOT_DIR}/benchmark/results/rest"
 GRPC_DIR="${ROOT_DIR}/benchmark/results/grpc"
 OUTPUT_PATH="${ROOT_DIR}/benchmark/results/report-latest.md"
+HTML_OUTPUT_PATH="${ROOT_DIR}/benchmark/results/report-latest.html"
 
 find_latest_timestamp() {
   local dir="$1"
@@ -49,14 +50,15 @@ if [[ -z "${LATEST_TIMESTAMP}" ]]; then
   exit 1
 fi
 
-python3 - "${ROOT_DIR}" "${LATEST_TIMESTAMP}" "${OUTPUT_PATH}" <<'PY'
+python3 - "${ROOT_DIR}" "${LATEST_TIMESTAMP}" "${OUTPUT_PATH}" "${HTML_OUTPUT_PATH}" <<'PY'
 import glob
+import html
 import json
 import os
 import sys
 from datetime import datetime
 
-root_dir, ts, output_path = sys.argv[1], sys.argv[2], sys.argv[3]
+root_dir, ts, output_path, html_output_path = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 
 rest_dir = os.path.join(root_dir, "benchmark", "results", "rest")
 grpc_dir = os.path.join(root_dir, "benchmark", "results", "grpc")
@@ -140,54 +142,237 @@ def parse_grpc(path):
 rest_files = sorted(glob.glob(os.path.join(rest_dir, f"{ts}-scenario-*.json")))
 grpc_files = sorted(glob.glob(os.path.join(grpc_dir, f"{ts}-scenario-*.json")))
 
-lines = [
-    "# Rapport benchmark (latest)",
-    "",
-    f"- Timestamp: `{ts}`",
-    f"- Genere le: `{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC`",
-    "",
-]
+rest_rows = []
+for path in rest_files:
+    scenario = os.path.basename(path).split("-scenario-")[1].replace(".json", "").upper()
+    rest_rows.append({"scenario": scenario, "parsed": parse_rest(path)})
 
-if rest_files:
-    lines.append("## REST")
-    lines.append("")
-    lines.append("| Scenario | p50 (ms) | p95 (ms) | p99 (ms) | Throughput (req/s) | Erreurs |")
-    lines.append("|---|---:|---:|---:|---:|---:|")
-    for path in rest_files:
-        scenario = os.path.basename(path).split("-scenario-")[1].replace(".json", "").upper()
-        parsed = parse_rest(path)
-        if parsed is None:
-            lines.append(f"| {scenario} | n/a | n/a | n/a | n/a | n/a |")
-            continue
-        lines.append(
-            f"| {scenario} | {fmt_num(parsed['lat_p50'])} | {fmt_num(parsed['lat_p95'])} | "
-            f"{fmt_num(parsed['lat_p99'])} | {fmt_num(parsed['rps'])} | {fmt_pct(parsed['err'])} |"
-        )
-    lines.append("")
-else:
-    lines.extend(["## REST", "", "_Aucun resultat REST pour ce timestamp._", ""])
+grpc_rows = []
+for path in grpc_files:
+    scenario = os.path.basename(path).split("-scenario-")[1].replace(".json", "").upper()
+    grpc_rows.append({"scenario": scenario, "parsed": parse_grpc(path)})
 
-if grpc_files:
-    lines.append("## gRPC")
-    lines.append("")
-    lines.append("| Scenario | p50 (ms) | p95 (ms) | p99 (ms) | Throughput (req/s) | Erreurs |")
-    lines.append("|---|---:|---:|---:|---:|---:|")
-    for path in grpc_files:
-        scenario = os.path.basename(path).split("-scenario-")[1].replace(".json", "").upper()
-        parsed = parse_grpc(path)
+generated_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def render_markdown():
+    lines = [
+        "# Rapport benchmark (latest)",
+        "",
+        f"- Timestamp: `{ts}`",
+        f"- Genere le: `{generated_at} UTC`",
+        "",
+    ]
+
+    if rest_rows:
+        lines.append("## REST")
+        lines.append("")
+        lines.append("| Scenario | p50 (ms) | p95 (ms) | p99 (ms) | Throughput (req/s) | Erreurs |")
+        lines.append("|---|---:|---:|---:|---:|---:|")
+        for row in rest_rows:
+            scenario = row["scenario"]
+            parsed = row["parsed"]
+            if parsed is None:
+                lines.append(f"| {scenario} | n/a | n/a | n/a | n/a | n/a |")
+                continue
+            lines.append(
+                f"| {scenario} | {fmt_num(parsed['lat_p50'])} | {fmt_num(parsed['lat_p95'])} | "
+                f"{fmt_num(parsed['lat_p99'])} | {fmt_num(parsed['rps'])} | {fmt_pct(parsed['err'])} |"
+            )
+        lines.append("")
+    else:
+        lines.extend(["## REST", "", "_Aucun resultat REST pour ce timestamp._", ""])
+
+    if grpc_rows:
+        lines.append("## gRPC")
+        lines.append("")
+        lines.append("| Scenario | p50 (ms) | p95 (ms) | p99 (ms) | Throughput (req/s) | Erreurs |")
+        lines.append("|---|---:|---:|---:|---:|---:|")
+        for row in grpc_rows:
+            scenario = row["scenario"]
+            parsed = row["parsed"]
+            if parsed is None:
+                lines.append(f"| {scenario} | n/a | n/a | n/a | n/a | n/a |")
+                continue
+            lines.append(
+                f"| {scenario} | {fmt_num(parsed['lat_p50'])} | {fmt_num(parsed['lat_p95'])} | "
+                f"{fmt_num(parsed['lat_p99'])} | {fmt_num(parsed['rps'])} | {fmt_pct(parsed['err'])} |"
+            )
+        lines.append("")
+    else:
+        lines.extend(["## gRPC", "", "_Aucun resultat gRPC pour ce timestamp._", ""])
+
+    return "\n".join(lines) + "\n"
+
+
+def html_table_rows(rows):
+    rendered = []
+    for row in rows:
+        scenario = html.escape(row["scenario"])
+        parsed = row["parsed"]
         if parsed is None:
-            lines.append(f"| {scenario} | n/a | n/a | n/a | n/a | n/a |")
-            continue
-        lines.append(
-            f"| {scenario} | {fmt_num(parsed['lat_p50'])} | {fmt_num(parsed['lat_p95'])} | "
-            f"{fmt_num(parsed['lat_p99'])} | {fmt_num(parsed['rps'])} | {fmt_pct(parsed['err'])} |"
+            cells = ["n/a", "n/a", "n/a", "n/a", "n/a"]
+        else:
+            cells = [
+                fmt_num(parsed["lat_p50"]),
+                fmt_num(parsed["lat_p95"]),
+                fmt_num(parsed["lat_p99"]),
+                fmt_num(parsed["rps"]),
+                fmt_pct(parsed["err"]),
+            ]
+        rendered.append(
+            "<tr>"
+            f"<td>{scenario}</td>"
+            f"<td class=\"num\">{html.escape(cells[0])}</td>"
+            f"<td class=\"num\">{html.escape(cells[1])}</td>"
+            f"<td class=\"num\">{html.escape(cells[2])}</td>"
+            f"<td class=\"num\">{html.escape(cells[3])}</td>"
+            f"<td class=\"num\">{html.escape(cells[4])}</td>"
+            "</tr>"
         )
-    lines.append("")
-else:
-    lines.extend(["## gRPC", "", "_Aucun resultat gRPC pour ce timestamp._", ""])
+    return "\n".join(rendered)
+
+
+def render_html():
+    escaped_ts = html.escape(ts)
+    escaped_generated_at = html.escape(generated_at)
+    rest_block = (
+        "<p class=\"empty\"><em>Aucun resultat REST pour ce timestamp.</em></p>"
+        if not rest_rows
+        else (
+            "<table><thead><tr>"
+            "<th>Scenario</th><th>p50 (ms)</th><th>p95 (ms)</th><th>p99 (ms)</th>"
+            "<th>Throughput (req/s)</th><th>Erreurs</th>"
+            "</tr></thead><tbody>"
+            f"{html_table_rows(rest_rows)}"
+            "</tbody></table>"
+        )
+    )
+    grpc_block = (
+        "<p class=\"empty\"><em>Aucun resultat gRPC pour ce timestamp.</em></p>"
+        if not grpc_rows
+        else (
+            "<table><thead><tr>"
+            "<th>Scenario</th><th>p50 (ms)</th><th>p95 (ms)</th><th>p99 (ms)</th>"
+            "<th>Throughput (req/s)</th><th>Erreurs</th>"
+            "</tr></thead><tbody>"
+            f"{html_table_rows(grpc_rows)}"
+            "</tbody></table>"
+        )
+    )
+
+    return f"""<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rapport benchmark (latest)</title>
+  <style>
+    :root {{
+      color-scheme: light dark;
+      --bg: #f5f7fb;
+      --fg: #1b2430;
+      --card: #ffffff;
+      --border: #d8dee9;
+      --muted: #4f5b66;
+      --header: #eef3ff;
+      --row-alt: #f9fbff;
+    }}
+    @media (prefers-color-scheme: dark) {{
+      :root {{
+        --bg: #0f141b;
+        --fg: #e6edf3;
+        --card: #151b23;
+        --border: #2a3441;
+        --muted: #9fb0c0;
+        --header: #1f2937;
+        --row-alt: #111923;
+      }}
+    }}
+    body {{
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }}
+    .container {{
+      max-width: 1024px;
+      margin: 2rem auto;
+      padding: 0 1rem 2rem;
+    }}
+    .card {{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    }}
+    h1, h2 {{
+      margin: 0 0 0.75rem;
+      line-height: 1.25;
+    }}
+    h2 {{
+      margin-top: 1.75rem;
+    }}
+    .meta {{
+      margin: 0 0 0.25rem;
+      color: var(--muted);
+    }}
+    code {{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.9em;
+    }}
+    table {{
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+    }}
+    th, td {{
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+    }}
+    th {{
+      background: var(--header);
+      font-weight: 600;
+    }}
+    tbody tr:nth-child(even) {{
+      background: var(--row-alt);
+    }}
+    td.num {{
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }}
+    .empty {{
+      color: var(--muted);
+      margin: 0.35rem 0 0;
+    }}
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Rapport benchmark (latest)</h1>
+      <p class="meta">Timestamp: <code>{escaped_ts}</code></p>
+      <p class="meta">Genere le: <code>{escaped_generated_at} UTC</code></p>
+      <h2>REST</h2>
+      {rest_block}
+      <h2>gRPC</h2>
+      {grpc_block}
+    </section>
+  </main>
+</body>
+</html>
+"""
 
 with open(output_path, "w", encoding="utf-8") as f:
-    f.write("\n".join(lines) + "\n")
+    f.write(render_markdown())
+
+with open(html_output_path, "w", encoding="utf-8") as f:
+    f.write(render_html())
 
 print(output_path)
+print(html_output_path)
 PY

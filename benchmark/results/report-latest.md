@@ -1,7 +1,7 @@
 # Rapport benchmark (latest)
 
 - Timestamp: `20260512-signalwatch-final`
-- Genere le: `2026-05-12 11:20:26 UTC`
+- Genere le: `2026-05-13 07:26:38 UTC`
 
 ## REST
 
