@@ -1,5 +1,5 @@
 $kind: collection
-name: 'SignalWatch gRPC API'
+name: SignalWatch gRPC API
 description: |-
   gRPC CRUD operations for the SignalWatch SensorService built with Tonic (Rust).
   Connect to {{grpc_host}} (default: 127.0.0.1:50051).
@@ -10,3 +10,5 @@ description: |-
   3. GetSensor
   4. UpdateSensor
   5. DeleteSensor
+variables:
+  grpc_host: ""

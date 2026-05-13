@@ -1,2 +1,7 @@
 name: New Environment
-values: []
+values:
+  - key: rest_base_url
+    value: ''
+  - key: grpc_host
+    value: ''
+color: 0

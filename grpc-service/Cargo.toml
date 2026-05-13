@@ -13,6 +13,8 @@ tokio-stream = { version = "0.1", features = ["net"] }
 uuid = { version = "1", features = ["v4"] }
 chrono = "0.4"
 
+tonic-reflection = "0.12"
+
 [build-dependencies]
 tonic-build = "0.12"
 prost-build = "0.13"

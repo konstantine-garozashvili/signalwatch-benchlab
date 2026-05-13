@@ -1,0 +1,136 @@
+{
+    "metrics": {
+        "iterations": {
+            "count": 500,
+            "rate": 24526.635926616305
+        },
+        "http_req_blocked": {
+            "avg": 0.0040119760479041255,
+            "min": 0,
+            "med": 0.001,
+            "max": 0.414,
+            "p(90)": 0.002,
+            "p(95)": 0.002
+        },
+        "data_received": {
+            "count": 195359,
+            "rate": 9582998.135975668
+        },
+        "http_req_receiving": {
+            "avg": 0.011832335329341232,
+            "min": 0.003,
+            "med": 0.007,
+            "max": 0.186,
+            "p(90)": 0.022,
+            "p(95)": 0.03
+        },
+        "checks": {
+            "fails": 0,
+            "passes": 501,
+            "value": 1
+        },
+        "http_req_tls_handshaking": {
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0
+        },
+        "http_req_waiting": {
+            "max": 0.34,
+            "p(90)": 0.202,
+            "p(95)": 0.228,
+            "avg": 0.13632135728542913,
+            "min": 0.071,
+            "med": 0.125
+        },
+        "http_req_duration": {
+            "avg": 0.1532894211576848,
+            "min": 0.075,
+            "med": 0.137,
+            "max": 0.458,
+            "p(90)": 0.229,
+            "p(95)": 0.262
+        },
+        "iteration_duration": {
+            "avg": 0.191505406,
+            "min": 0.095208,
+            "med": 0.1696465,
+            "max": 0.847666,
+            "p(90)": 0.27058340000000003,
+            "p(95)": 0.34079725
+        },
+        "http_req_connecting": {
+            "avg": 0.0013652694610778442,
+            "min": 0,
+            "med": 0,
+            "max": 0.149,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "data_sent": {
+            "count": 107697,
+            "rate": 5282890.218777592
+        },
+        "http_reqs": {
+            "count": 501,
+            "rate": 24575.689198469536
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 0.262,
+            "avg": 0.1532894211576848,
+            "min": 0.075,
+            "med": 0.137,
+            "max": 0.458,
+            "p(90)": 0.229
+        },
+        "http_req_sending": {
+            "max": 0.16,
+            "p(90)": 0.007,
+            "p(95)": 0.014,
+            "avg": 0.005135728542914102,
+            "min": 0.001,
+            "med": 0.002
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 501,
+            "value": 0
+        }
+    },
+    "setup_data": {
+        "sensorId": "fca5f48a-e028-4f0a-a120-93ece679a347"
+    },
+    "root_group": {
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "setup": {
+                "path": "::setup",
+                "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+                "groups": {},
+                "checks": {
+                        "create sensor status is 201": {
+                            "path": "::setup::create sensor status is 201",
+                            "id": "b381870941d74cdda70909cd1c156be7",
+                            "passes": 1,
+                            "fails": 0,
+                            "name": "create sensor status is 201"
+                        }
+                    },
+                "name": "setup"
+            }
+        },
+        "checks": {
+            "create sensor status is 201": {
+                "name": "create sensor status is 201",
+                "path": "::create sensor status is 201",
+                "id": "c60ac1f4dd21c2c2664c39ebde746e3a",
+                "passes": 500,
+                "fails": 0
+            }
+        },
+        "name": ""
+    }
+}

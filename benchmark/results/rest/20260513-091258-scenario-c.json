@@ -1,0 +1,146 @@
+{
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "setup": {
+                "name": "setup",
+                "path": "::setup",
+                "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+                "groups": {},
+                "checks": {
+                        "create sensor status is 201": {
+                            "name": "create sensor status is 201",
+                            "path": "::setup::create sensor status is 201",
+                            "id": "b381870941d74cdda70909cd1c156be7",
+                            "passes": 1,
+                            "fails": 0
+                        }
+                    }
+            }
+        },
+        "checks": {
+            "get sensor status is 200": {
+                "path": "::get sensor status is 200",
+                "id": "ce21c2e73187a3085f47d848deca42e1",
+                "passes": 4920895,
+                "fails": 0,
+                "name": "get sensor status is 200"
+            }
+        }
+    },
+    "metrics": {
+        "http_req_sending": {
+            "avg": 0.0015987407579163809,
+            "min": 0,
+            "med": 0.001,
+            "max": 2.594,
+            "p(90)": 0.003,
+            "p(95)": 0.003
+        },
+        "iterations": {
+            "rate": 70297.49976700332,
+            "count": 4920895
+        },
+        "http_req_duration{expected_response:true}": {
+            "min": 0.039,
+            "med": 0.428,
+            "max": 33.152,
+            "p(90)": 1.101,
+            "p(95)": 1.309,
+            "avg": 0.5279676026479488
+        },
+        "iteration_duration": {
+            "p(90)": 1.117084,
+            "p(95)": 1.325958,
+            "avg": 0.5438657611560138,
+            "min": 0.049375,
+            "med": 0.442959,
+            "max": 33.172917
+        },
+        "vus_max": {
+            "value": 100,
+            "min": 100,
+            "max": 100
+        },
+        "http_req_receiving": {
+            "avg": 0.0050582971072385815,
+            "min": 0.002,
+            "med": 0.003,
+            "max": 6.511,
+            "p(90)": 0.009,
+            "p(95)": 0.011
+        },
+        "checks": {
+            "passes": 4920896,
+            "fails": 0,
+            "value": 1
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 4920896,
+            "value": 0
+        },
+        "http_reqs": {
+            "rate": 70297.51405251434,
+            "count": 4920896
+        },
+        "http_req_tls_handshaking": {
+            "p(95)": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0
+        },
+        "http_req_waiting": {
+            "max": 33.146,
+            "p(90)": 1.095,
+            "p(95)": 1.302,
+            "avg": 0.5213105647833604,
+            "min": 0.034,
+            "med": 0.422
+        },
+        "data_sent": {
+            "count": 560982271,
+            "rate": 8013918.416246534
+        },
+        "http_req_duration": {
+            "min": 0.039,
+            "med": 0.428,
+            "max": 33.152,
+            "p(90)": 1.101,
+            "p(95)": 1.309,
+            "avg": 0.5279676026479488
+        },
+        "http_req_blocked": {
+            "p(90)": 0.001,
+            "p(95)": 0.001,
+            "avg": 0.0005700146884007625,
+            "min": 0,
+            "med": 0,
+            "max": 2.402
+        },
+        "data_received": {
+            "count": 2017567365,
+            "rate": 28821980.832958434
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 99
+        },
+        "http_req_connecting": {
+            "avg": 0.0000023749739884768963,
+            "min": 0,
+            "med": 0,
+            "max": 0.413,
+            "p(90)": 0,
+            "p(95)": 0
+        }
+    },
+    "setup_data": {
+        "sensorId": "180b112b-5c57-4bf8-8a37-181aa63af73d"
+    }
+}
