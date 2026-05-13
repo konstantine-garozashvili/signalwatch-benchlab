@@ -106,10 +106,14 @@ Fichier de sortie:
 ## Livrables documentaires
 
 - [Rapport de veille](./docs/rapport-veille.pdf) - synthese ecrite (contexte, methode, analyse).
-- [Presentation](./docs/presentation.pdf) - support de restitution condense.
+- [Presentation PDF](./docs/presentation.pdf) - support de restitution condense.
+- [Presentation HTML interactive](./docs/presentation-slides.html) - 10 slides naviguables (fleches clavier), graphiques CSS, matrice de decision.
+- [Presentation Markdown](./PRESENTATION.md) - version texte des 10 slides avec donnees completes et diagrammes ASCII.
+- [Notes de presentation](./docs/notes-presentation.md) - texte a dire pour chaque slide (francais, ton consultant).
+- [Plan de veille + RACI](./docs/plan-veille.md) - plan structure avec sources (≥ 3 par theme), planning semaine, RACI complet.
 - [Guide de reproduction des benchmarks](./docs/benchmark-reproduction.md) — runbook contributeur (`make run`, `make bench`, `make report`).
 
-Rapports generes apres coup :
+Rapports generes automatiquement (incluent eco-conception depuis `make report`) :
 - [benchmark/results/report-latest.md](./benchmark/results/report-latest.md)
 - [benchmark/results/report-latest.html](./benchmark/results/report-latest.html)
 
@@ -117,17 +121,32 @@ Rapports generes apres coup :
 
 ## Resultats benchmark (instantane de reference)
 
-Un jeu de resultats complet est archive sous le suffixe de fichiers **`20260512-signalwatch-final`** (execution du 12 mai 2026 sur environnement de developpement ; les valeurs varient selon la machine).
+Un jeu de resultats complet est archive sous le suffixe **`20260513-091258`** (execution du 13 mai 2026, environnement de developpement macOS ; valeurs indicatives).
 
-Extraits representatifs (detail et rampe complete dans le rapport) :
+### Latences et debits
 
-| Scenario | REST (indicatif) | gRPC (indicatif) |
-|----------|------------------|------------------|
-| A - Lecture unitaire | p50 ~0,14 ms ; debit k6 ~43,7k req/s | p50 ~0,46 ms ; debit ghz ~16,3k req/s |
-| B - Ecriture | p50 ~0,13 ms ; debit k6 ~24,3k req/s | p50 ~0,22 ms ; debit ghz ~15,6k req/s |
-| C - Charge progressive | debit agrege k6 ~54,9k req/s sur la rampe testee | plusieurs fichiers `scenario-c-concurrency-*.json` ; p50 monte avec la concurrence (ex. ~4,8 ms a 100 connexions pour la derniere etape) |
+| Scenario | Protocole | p50 (ms) | p95 (ms) | p99 (ms) | Debit (req/s) | Erreurs |
+|----------|-----------|---:|---:|---:|---:|---:|
+| A — Lecture unitaire (1000 req, 10 concurrents) | REST (k6) | 0,15 | 0,34 | n/a* | 42 030 | 0% |
+| A — Lecture unitaire (1000 req, 10 concurrents) | gRPC (ghz) | 0,48 | 0,78 | 1,11 | 16 113 | 0% |
+| B — Ecriture (500 req, 5 concurrents) | REST (k6) | 0,14 | 0,26 | n/a* | 24 575 | 0% |
+| B — Ecriture (500 req, 5 concurrents) | gRPC (ghz) | 0,22 | 0,36 | 0,46 | 16 921 | 0% |
+| C — Charge progressive (rampe 10→100) | REST (k6) | 0,43 | 1,31 | n/a* | ~70 297 (agrege) | 0% |
+| C — 10 concurrents | gRPC (ghz) | 0,44 | 0,69 | 0,80 | 17 527 | 0% |
+| C — 50 concurrents | gRPC (ghz) | 2,44 | 2,99 | 3,15 | 16 668 | 0% |
+| C — 100 concurrents | gRPC (ghz) | 4,53 | 7,17 | 8,12 | 15 205 | 0% |
 
-Les debits **k6** et **ghz** ne sont pas comparables comme un classement absolu : ils reflectent chaque outil et scenario. Utiliser surtout les latences et la stabilite des erreurs pour comparer les stacks dans ce depot.
+> *p99 REST non disponible : k6 exporte p90 et p95 dans son JSON de synthese. Pour activer p99, ajouter un `thresholds` dans le script k6 ou utiliser `--out json` avec post-traitement.
+
+### Eco-conception : taille des payloads
+
+| Protocole | Taille reponse GET /sensor | Bande passante a 10k evt/min | Par an (24h/365j) |
+|-----------|---------------------------:|-----------------------------:|------------------:|
+| REST (JSON + HTTP/1.1) | 410 B/req (mesure k6) | 4,10 MB/min | **2 155 GB** |
+| gRPC (Protobuf + HTTP/2) | ~153 B/req (estimation) | 1,53 MB/min | **804 GB** |
+| **Economie gRPC** | **2,7x plus compact** | 2,57 MB/min economies | **~1 351 GB/an** |
+
+Les debits **k6** et **ghz** ne sont pas comparables directement : ils refletent chaque outil et scenario. Utiliser les latences et les tailles de payload pour la comparaison protocolaire.
 
 ---
 

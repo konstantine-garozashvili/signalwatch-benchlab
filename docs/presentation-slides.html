@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignalWatch BenchLab — REST vs gRPC</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0f172a;
+    --card: #1e293b;
+    --card2: #263248;
+    --blue: #3b82f6;
+    --blue-light: #60a5fa;
+    --blue-dark: #1d4ed8;
+    --green: #22c55e;
+    --orange: #f59e0b;
+    --red: #ef4444;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--navy);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+  }
+
+  .slideshow {
+    position: relative;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 40px 56px 60px;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
+  }
+
+  .slide.exit-left {
+    opacity: 0;
+    transform: translateX(-60px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  /* NAV */
+  .nav {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    z-index: 100;
+    background: rgba(15,23,42,0.85);
+    backdrop-filter: blur(8px);
+    padding: 10px 22px;
+    border-radius: 40px;
+    border: 1px solid var(--border);
+  }
+
+  .nav button {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .nav button:hover { background: var(--blue-dark); border-color: var(--blue); }
+  .nav button:disabled { opacity: 0.35; cursor: default; }
+
+  .counter {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    min-width: 52px;
+    text-align: center;
+  }
+
+  .slide-num {
+    position: fixed;
+    top: 18px;
+    right: 28px;
+    font-size: 12px;
+    color: var(--border);
+    font-weight: 600;
+    z-index: 100;
+    letter-spacing: 0.04em;
+  }
+
+  /* SLIDE HEADER */
+  .slide-header {
+    margin-bottom: 28px;
+  }
+
+  .slide-tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--blue-light);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  h1.title {
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #fff 30%, var(--blue-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  h2.title {
+    font-size: 1.9rem;
+    font-weight: 800;
+    line-height: 1.2;
+    background: linear-gradient(135deg, #fff 40%, var(--blue-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  hr.divider {
+    border: none;
+    border-top: 2px solid var(--blue);
+    width: 56px;
+    margin: 12px 0;
+    opacity: 0.7;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+
+  .card-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--blue-light);
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  /* LAYOUTS */
+  .cols-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    flex: 1;
+  }
+
+  .cols-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .main-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* LISTS */
+  ul.fancy {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  ul.fancy li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  ul.fancy li::before {
+    content: '▸';
+    color: var(--blue);
+    font-size: 0.75rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  ul.fancy.green li::before { color: var(--green); }
+  ul.fancy.orange li::before { color: var(--orange); }
+
+  /* BADGE */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .badge-blue { background: rgba(59,130,246,0.2); color: var(--blue-light); border: 1px solid var(--blue-dark); }
+  .badge-green { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid #16a34a; }
+  .badge-orange { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid #b45309; }
+  .badge-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid #b91c1c; }
+
+  /* TABLES */
+  table.data {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  table.data th {
+    background: rgba(59,130,246,0.15);
+    color: var(--blue-light);
+    font-weight: 700;
+    padding: 9px 12px;
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 2px solid var(--blue-dark);
+  }
+
+  table.data td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  table.data tr:last-child td { border-bottom: none; }
+  table.data tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+
+  td.highlight { color: var(--blue-light); font-weight: 700; }
+  td.good { color: #4ade80; font-weight: 700; }
+  td.warn { color: #fbbf24; font-weight: 700; }
+  td.bad { color: #f87171; font-weight: 700; }
+
+  /* BAR CHARTS */
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 4px 0;
+  }
+
+  .bar-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .bar-label span:last-child {
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .bar-track {
+    background: rgba(255,255,255,0.07);
+    border-radius: 4px;
+    height: 22px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.8s cubic-bezier(.4,0,.2,1);
+    display: flex;
+    align-items: center;
+    padding-right: 8px;
+    justify-content: flex-end;
+  }
+
+  .bar-fill span {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    white-space: nowrap;
+  }
+
+  .bar-rest { background: linear-gradient(90deg, var(--blue-dark), var(--blue)); }
+  .bar-grpc { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+  .bar-grad { background: linear-gradient(90deg, #0369a1, var(--blue-light)); }
+
+  /* HERO STATS */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .stat-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* DECISION MATRIX */
+  .score-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  td.score-5 { color: #4ade80; font-weight: 700; }
+  td.score-4 { color: #a3e635; font-weight: 700; }
+  td.score-3 { color: #fbbf24; font-weight: 700; }
+  td.score-2 { color: #fb923c; font-weight: 700; }
+  td.score-1 { color: #f87171; font-weight: 700; }
+
+  .rec-box {
+    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05));
+    border: 1px solid var(--blue-dark);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+
+  .rec-box .rec-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--blue-light);
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .rec-steps {
+    display: flex;
+    gap: 12px;
+  }
+
+  .rec-step {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+  }
+
+  .rec-step strong {
+    display: block;
+    color: var(--blue-light);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  /* SLIDE 1 SPECIFIC */
+  .hero-banner {
+    background: linear-gradient(135deg, #1e3a8a, #1d4ed8, #2563eb);
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 22px;
+    border: 1px solid rgba(96,165,250,0.3);
+  }
+
+  .context-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    flex: 1;
+  }
+
+  /* RGPD */
+  .rgpd-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+
+  .rgpd-item:last-child { border-bottom: none; }
+
+  .rgpd-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: rgba(59,130,246,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .rgpd-text strong {
+    display: block;
+    font-size: 0.82rem;
+    margin-bottom: 2px;
+    color: var(--text);
+  }
+
+  .rgpd-text span {
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+
+  small { font-size: 0.72rem; color: var(--muted); }
+
+  .tech-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--blue-light);
+    margin: 3px;
+  }
+
+  .final-score {
+    background: var(--card2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 900;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="slide-num" id="slideNum">1 / 10</div>
+
+<div class="slideshow" id="slideshow">
+
+  <!-- SLIDE 1 -->
+  <div class="slide active" data-slide="1">
+    <div class="slide-header">
+      <div class="slide-tag">SignalWatch BenchLab · Projet Scolaire</div>
+      <h1 class="title">REST vs gRPC pour<br>un Monitoring IoT Industriel</h1>
+      <hr class="divider">
+      <p class="subtitle">Analyse comparative des protocoles pour une startup de surveillance de capteurs</p>
+    </div>
+
+    <div class="hero-banner">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:center;">
+        <div>
+          <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:rgba(147,197,253,0.8);margin-bottom:6px;">Startup</div>
+          <div style="font-size:1.1rem;font-weight:800;">SignalWatch</div>
+          <div style="font-size:0.8rem;color:rgba(255,255,255,0.7);margin-top:3px;">Monitoring industriel IoT</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:2.5rem;font-weight:900;line-height:1;">10 000</div>
+          <div style="font-size:0.75rem;color:rgba(147,197,253,0.9);text-transform:uppercase;letter-spacing:0.08em;">événements / minute</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:3px;">24h/24 · 365j/an</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:rgba(147,197,253,0.8);margin-bottom:8px;">Stack choisie</div>
+          <div>
+            <span class="tech-pill" style="border-color:rgba(251,146,60,0.5);color:#fb923c;background:rgba(251,146,60,0.1);">🦀 Rust</span>
+            <span class="tech-pill">Axum (REST)</span>
+            <span class="tech-pill">Tonic (gRPC)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="context-grid">
+      <div class="card">
+        <div class="card-title">Capteurs surveillés</div>
+        <ul class="fancy">
+          <li>Température (°C) — sondes industrielles</li>
+          <li>Pression (bar) — circuits hydrauliques</li>
+          <li>Vibration (Hz/g) — détection d'anomalies</li>
+          <li>Courant électrique — protection moteurs</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Architecture cible</div>
+        <ul class="fancy">
+          <li>Microservices conteneurisés (Docker)</li>
+          <li>Communication inter-services haute fréquence</li>
+          <li>Alertes temps-réel (seuil dépassé)</li>
+          <li>Stockage séries temporelles (TimescaleDB)</li>
+        </ul>
+      </div>
+      <div class="card" style="grid-column: span 2;">
+        <div class="card-title">Question centrale</div>
+        <div style="font-size:1.05rem;font-weight:700;color:var(--blue-light);">Quel protocole pour la communication inter-services à haute fréquence ?</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-top:6px;">REST (HTTP/1.1 + JSON) vs gRPC (HTTP/2 + Protocol Buffers) — benchmarked sur loopback localhost avec Rust</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 -->
+  <div class="slide" data-slide="2">
+    <div class="slide-header">
+      <div class="slide-tag">Panorama Protocoles · 1/2</div>
+      <h2 class="title">REST / HTTP — Le standard universel</h2>
+      <hr class="divider">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Modèle de communication</div>
+          <ul class="fancy" style="gap:10px;">
+            <li><strong>Requête/Réponse synchrone</strong> — client initie, serveur répond</li>
+            <li><strong>Format JSON</strong> — texte UTF-8, lisible humain, verbeux</li>
+            <li><strong>HTTP/1.1</strong> — une connexion par requête ou keep-alive</li>
+            <li><strong>Stateless</strong> — chaque requête porte ses propres informations</li>
+            <li><strong>Verbes HTTP</strong> — GET, POST, PUT, DELETE, PATCH</li>
+          </ul>
+        </div>
+        <div class="card" style="background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.3);">
+          <div class="card-title" style="color:#4ade80;">Forces</div>
+          <ul class="fancy green">
+            <li>Universellement supporté (navigateurs, mobiles, IoT)</li>
+            <li>Outillage mature : Postman, curl, Swagger/OpenAPI</li>
+            <li>Debugging facile — texte lisible dans Wireshark</li>
+            <li>Onboarding rapide — courbe d'apprentissage faible</li>
+            <li>Firewall & proxy friendy sans configuration</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card" style="background:rgba(239,68,68,0.06);border-color:rgba(239,68,68,0.25);">
+          <div class="card-title" style="color:#f87171;">Faiblesses</div>
+          <ul class="fancy orange">
+            <li>JSON verbeux — headers répétés à chaque requête</li>
+            <li>Pas de contrat fort (OpenAPI est optionnel)</li>
+            <li>Streaming difficile (SSE ou WebSocket requis)</li>
+            <li>Head-of-line blocking (HTTP/1.1)</li>
+            <li>Pas de génération de code client natif</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Format d'un payload REST</div>
+          <div style="background:#0f172a;border-radius:8px;padding:14px;font-family:monospace;font-size:0.78rem;color:#e2e8f0;line-height:1.6;border:1px solid var(--border);">
+            <span style="color:#94a3b8;">POST /sensors/readings HTTP/1.1</span><br>
+            <span style="color:#94a3b8;">Content-Type: application/json</span><br>
+            <span style="color:#94a3b8;">Authorization: Bearer ...</span><br><br>
+            <span style="color:#60a5fa;">{</span><br>
+            &nbsp;&nbsp;<span style="color:#a78bfa;">"sensor_id"</span>: <span style="color:#34d399;">"T-001"</span>,<br>
+            &nbsp;&nbsp;<span style="color:#a78bfa;">"temperature"</span>: <span style="color:#fb923c;">72.4</span>,<br>
+            &nbsp;&nbsp;<span style="color:#a78bfa;">"timestamp"</span>: <span style="color:#fb923c;">1716000000</span><br>
+            <span style="color:#60a5fa;">}</span><br>
+            <span style="color:#64748b;font-size:0.7rem;">// ~260B body + ~150B headers = ~410B/req</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 -->
+  <div class="slide" data-slide="3">
+    <div class="slide-header">
+      <div class="slide-tag">Panorama Protocoles · 2/2</div>
+      <h2 class="title">gRPC & Alternatives</h2>
+      <hr class="divider">
+    </div>
+
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:20px;flex:1;">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card">
+          <div class="card-title">gRPC — Protocol Buffers + HTTP/2</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:0.7rem;color:var(--blue-light);text-transform:uppercase;font-weight:700;margin-bottom:6px;">Forces</div>
+              <ul class="fancy green" style="font-size:0.8rem;">
+                <li>Payload compact (binaire Protobuf)</li>
+                <li>HTTP/2 : multiplexage, HPACK</li>
+                <li>Streaming natif (4 modes)</li>
+                <li>Contrat fort (.proto)</li>
+                <li>Code client généré (protoc)</li>
+              </ul>
+            </div>
+            <div>
+              <div style="font-size:0.7rem;color:#f87171;text-transform:uppercase;font-weight:700;margin-bottom:6px;">Faiblesses</div>
+              <ul class="fancy orange" style="font-size:0.8rem;">
+                <li>protoc requis pour builds</li>
+                <li>Pas de curl natif</li>
+                <li>Débogage binaire difficile</li>
+                <li>Moins accessible (apprentissage)</li>
+                <li>Navigateurs : grpc-web requis</li>
+              </ul>
+            </div>
+          </div>
+          <div style="background:#0f172a;border-radius:8px;padding:12px;font-family:monospace;font-size:0.76rem;color:#e2e8f0;border:1px solid var(--border);">
+            <span style="color:#94a3b8;">// sensor.proto</span><br>
+            <span style="color:#60a5fa;">message</span> <span style="color:#fbbf24;">SensorReading</span> {<br>
+            &nbsp;&nbsp;<span style="color:#a78bfa;">string</span> sensor_id = <span style="color:#fb923c;">1</span>;<br>
+            &nbsp;&nbsp;<span style="color:#a78bfa;">float</span> temperature = <span style="color:#fb923c;">2</span>;<br>
+            &nbsp;&nbsp;<span style="color:#a78bfa;">int64</span> timestamp = <span style="color:#fb923c;">3</span>;<br>
+            }<br>
+            <span style="color:#64748b;font-size:0.7rem;">// ~123B binaire + ~30B headers HPACK ≈ 153B/req</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card" style="background:rgba(124,58,237,0.08);border-color:rgba(124,58,237,0.3);">
+          <div class="card-title" style="color:#a78bfa;">GraphQL</div>
+          <ul class="fancy" style="font-size:0.8rem;">
+            <li>Requêtes flexibles (client-driven)</li>
+            <li>Évite over-fetching / under-fetching</li>
+            <li>Complexité serveur accrue</li>
+            <li>Pas de streaming natif</li>
+          </ul>
+          <div style="margin-top:8px;"><span class="badge badge-orange">Non retenu</span></div>
+        </div>
+
+        <div class="card" style="background:rgba(234,179,8,0.06);border-color:rgba(234,179,8,0.25);">
+          <div class="card-title" style="color:#fbbf24;">Message Brokers</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px;">Kafka · RabbitMQ · MQTT</div>
+          <ul class="fancy" style="font-size:0.8rem;">
+            <li>Asynchrone, découplage fort</li>
+            <li>Replay d'événements (Kafka)</li>
+            <li>Infrastructure lourde à opérer</li>
+            <li>Latence accrue (queue)</li>
+          </ul>
+          <div style="margin-top:8px;"><span class="badge badge-orange">Long terme</span></div>
+        </div>
+
+        <div class="card" style="background:rgba(34,197,94,0.06);border-color:rgba(34,197,94,0.25);">
+          <div class="card-title" style="color:#4ade80;">Verdict préliminaire</div>
+          <div style="font-size:0.82rem;line-height:1.5;">Pour SignalWatch, <strong>REST vs gRPC</strong> est le choix central. Les brokers async sont complémentaires, pas concurrents.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4 -->
+  <div class="slide" data-slide="4">
+    <div class="slide-header">
+      <div class="slide-tag">Benchmark · Scénario A</div>
+      <h2 class="title">Lecture Unitaire — 1 000 req, 10 concurrent</h2>
+      <hr class="divider">
+    </div>
+
+    <div class="main-split">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Résultats comparés</div>
+          <table class="data">
+            <thead>
+              <tr><th>Métrique</th><th>REST (k6)</th><th>gRPC (ghz)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>p50 latence</td><td class="good">0.15 ms</td><td class="warn">0.48 ms</td></tr>
+              <tr><td>p95 latence</td><td class="good">0.34 ms</td><td class="warn">0.78 ms</td></tr>
+              <tr><td>p99 latence</td><td class="highlight">— (n/d)</td><td class="highlight">1.11 ms</td></tr>
+              <tr><td>Débit</td><td class="good">42 030 req/s</td><td class="warn">16 113 req/s</td></tr>
+              <tr><td>Requêtes</td><td>1 000</td><td>1 000</td></tr>
+              <tr><td>Concurrence</td><td>10</td><td>10</td></tr>
+              <tr><td>Protocole</td><td>HTTP/1.1</td><td>HTTP/2</td></tr>
+              <tr><td>Format</td><td>JSON</td><td>Protobuf</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.3);">
+          <div class="card-title" style="color:#fbbf24;">Attention — Comparaison limitée</div>
+          <div style="font-size:0.8rem;line-height:1.5;color:var(--text);">k6 utilise HTTP/1.1 (connexion unique, pas de multiplexage) tandis que ghz cible HTTP/2. Les débits <strong>ne sont pas directement comparables</strong> — ils mesurent des stacks différentes.</div>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card-title">Latence p50 — comparaison visuelle</div>
+
+        <div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px;font-weight:600;">Latence p50 (ms) — plus bas = meilleur</div>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <div class="bar-label"><span>REST / Axum</span><span>0.15 ms</span></div>
+              <div class="bar-track"><div class="bar-fill bar-rest" style="width:31%"><span>0.15</span></div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label"><span>gRPC / Tonic</span><span>0.48 ms</span></div>
+              <div class="bar-track"><div class="bar-fill bar-grpc" style="width:100%"><span>0.48</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px;font-weight:600;">Débit (req/s) — plus haut = meilleur</div>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <div class="bar-label"><span>REST / Axum</span><span>42 030 req/s</span></div>
+              <div class="bar-track"><div class="bar-fill bar-rest" style="width:100%"><span>42 030</span></div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label"><span>gRPC / Tonic</span><span>16 113 req/s</span></div>
+              <div class="bar-track"><div class="bar-fill bar-grpc" style="width:38%"><span>16 113</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:rgba(59,130,246,0.08);border-radius:8px;padding:12px;border:1px solid rgba(59,130,246,0.2);">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--blue-light);margin-bottom:4px;">Analyse</div>
+          <div style="font-size:0.8rem;line-height:1.4;">REST apparaît 3.2x plus rapide en p50 sur ce scénario. Cependant, le HTTP/2 de gRPC offre des avantages en charge élevée (multiplexage) non capturés ici.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 -->
+  <div class="slide" data-slide="5">
+    <div class="slide-header">
+      <div class="slide-tag">Benchmark · Scénario B</div>
+      <h2 class="title">Écriture — 500 req, 5 concurrent</h2>
+      <hr class="divider">
+    </div>
+
+    <div class="main-split">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Résultats comparés</div>
+          <table class="data">
+            <thead>
+              <tr><th>Métrique</th><th>REST (k6)</th><th>gRPC (ghz)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>p50 latence</td><td class="good">0.14 ms</td><td class="warn">0.22 ms</td></tr>
+              <tr><td>p95 latence</td><td class="good">0.26 ms</td><td class="warn">0.36 ms</td></tr>
+              <tr><td>p99 latence</td><td class="highlight">— (n/d)</td><td class="warn">0.46 ms</td></tr>
+              <tr><td>Débit</td><td class="good">24 575 req/s</td><td class="warn">16 921 req/s</td></tr>
+              <tr><td>Requêtes</td><td>500</td><td>500</td></tr>
+              <tr><td>Concurrence</td><td>5</td><td>5</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Distribution latence gRPC (Scénario B)</div>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <div class="bar-label"><span>p50</span><span>0.22 ms</span></div>
+              <div class="bar-track"><div class="bar-fill bar-grpc" style="width:48%"></div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label"><span>p95</span><span>0.36 ms</span></div>
+              <div class="bar-track"><div class="bar-fill bar-grpc" style="width:78%"></div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label"><span>p99</span><span>0.46 ms</span></div>
+              <div class="bar-track"><div class="bar-fill bar-grpc" style="width:100%"></div></div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:0.75rem;color:var(--muted);">Distribution serrée : p99/p50 = 2.1x — comportement prévisible</div>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card-title">Latence p50 — Écriture</div>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <div class="bar-label"><span>REST / Axum</span><span>0.14 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-rest" style="width:64%"><span>0.14</span></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>gRPC / Tonic</span><span>0.22 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:100%"><span>0.22</span></div></div>
+          </div>
+        </div>
+
+        <div class="card-title" style="margin-top:4px;">Débit (req/s)</div>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <div class="bar-label"><span>REST / Axum</span><span>24 575 req/s</span></div>
+            <div class="bar-track"><div class="bar-fill bar-rest" style="width:100%"><span>24 575</span></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>gRPC / Tonic</span><span>16 921 req/s</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:69%"><span>16 921</span></div></div>
+          </div>
+        </div>
+
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px;justify-content:flex-end;">
+          <div style="background:rgba(34,197,94,0.08);border-radius:8px;padding:12px;border:1px solid rgba(34,197,94,0.2);">
+            <div style="font-size:0.75rem;font-weight:700;color:#4ade80;margin-bottom:4px;">Point notable — gRPC</div>
+            <div style="font-size:0.8rem;line-height:1.4;">L'écart se réduit en écriture (1.57x vs 3.2x en lecture). gRPC bénéficie davantage des opérations POST car le payload Protobuf compense mieux le coût de négociation HTTP/2.</div>
+          </div>
+          <div style="background:rgba(59,130,246,0.08);border-radius:8px;padding:12px;border:1px solid rgba(59,130,246,0.2);">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--blue-light);margin-bottom:4px;">Avantage gRPC</div>
+            <div style="font-size:0.8rem;line-height:1.4;">Seul gRPC expose un p99 mesurable (0.46ms). k6 ne remonte pas le p99 dans son résumé par défaut — important pour les SLA de production.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6 -->
+  <div class="slide" data-slide="6">
+    <div class="slide-header">
+      <div class="slide-tag">Benchmark · Scénario C</div>
+      <h2 class="title">Montée en charge gRPC — 10 à 100 concurrent</h2>
+      <hr class="divider">
+    </div>
+
+    <div class="main-split">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card">
+          <div class="card-title">gRPC — p50 latence par concurrence</div>
+          <table class="data" style="font-size:0.78rem;">
+            <thead>
+              <tr><th>Concurrence</th><th>p50 (ms)</th><th>Variation</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>10</td><td class="good">0.44</td><td><span class="badge badge-green">baseline</span></td></tr>
+              <tr><td>20</td><td class="good">0.87</td><td>+98%</td></tr>
+              <tr><td>30</td><td class="warn">1.26</td><td>+186%</td></tr>
+              <tr><td>40</td><td class="warn">1.71</td><td>+289%</td></tr>
+              <tr><td>50</td><td class="warn">2.44</td><td>+455%</td></tr>
+              <tr><td>60</td><td class="warn">2.63</td><td>+498%</td></tr>
+              <tr><td>70</td><td class="bad">2.84</td><td>+545%</td></tr>
+              <tr><td>80</td><td class="bad">3.67</td><td>+734%</td></tr>
+              <tr><td>90</td><td class="bad">4.15</td><td>+843%</td></tr>
+              <tr><td>100</td><td class="bad">4.53</td><td>+930%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="background:rgba(59,130,246,0.06);">
+          <div style="font-size:0.78rem;line-height:1.5;">REST (scénario C agrégé) : <strong style="color:var(--blue-light);">p50 = 0.43ms · 70 297 req/s</strong> — test progressif multi-paliers, méthodologie différente.</div>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;">
+        <div class="card-title">p50 Latence (ms) par concurrence gRPC</div>
+        <div class="bar-chart" style="flex:1;justify-content:space-around;">
+          <div class="bar-row">
+            <div class="bar-label"><span>10 workers</span><span>0.44 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:10%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>20 workers</span><span>0.87 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:19%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>30 workers</span><span>1.26 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:28%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>40 workers</span><span>1.71 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:38%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>50 workers</span><span>2.44 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:54%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>60 workers</span><span>2.63 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:58%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>70 workers</span><span>2.84 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:63%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>80 workers</span><span>3.67 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:81%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>90 workers</span><span>4.15 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:92%"></div></div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label"><span>100 workers</span><span>4.53 ms</span></div>
+            <div class="bar-track"><div class="bar-fill bar-grpc" style="width:100%"></div></div>
+          </div>
+        </div>
+        <div style="margin-top:12px;font-size:0.78rem;color:var(--muted);line-height:1.4;padding:10px;background:rgba(255,255,255,0.04);border-radius:6px;">
+          Dégradation <strong>linéaire</strong> — le débit reste stable (~16-18k req/s) malgré la montée en latence. Comportement prévisible et scalable.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7 -->
+  <div class="slide" data-slide="7">
+    <div class="slide-header">
+      <div class="slide-tag">Analyse · Éco-conception</div>
+      <h2 class="title">Impact réseau à l'échelle SignalWatch</h2>
+      <hr class="divider">
+      <p class="subtitle">10 000 événements/min · 24h/24 · 365j/an</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-box" style="border-color:rgba(59,130,246,0.4);">
+        <div class="stat-num" style="color:var(--blue-light);">410 B</div>
+        <div class="stat-label">REST — taille par requête</div>
+        <div style="margin-top:8px;font-size:0.72rem;color:var(--muted);">~150B headers HTTP/1.1<br>+ ~260B corps JSON</div>
+      </div>
+      <div class="stat-box" style="border-color:rgba(124,58,237,0.4);">
+        <div class="stat-num" style="color:#a78bfa;">153 B</div>
+        <div class="stat-label">gRPC — taille par requête</div>
+        <div style="margin-top:8px;font-size:0.72rem;color:var(--muted);">~30B headers HPACK (HTTP/2)<br>+ ~123B Protobuf binaire</div>
+      </div>
+      <div class="stat-box" style="border-color:rgba(34,197,94,0.4);">
+        <div class="stat-num" style="color:#4ade80;">2.7x</div>
+        <div class="stat-label">gRPC plus compact</div>
+        <div style="margin-top:8px;font-size:0.72rem;color:var(--muted);">410 / 153 ≈ 2.68</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;flex:1;">
+      <div class="card" style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;border-color:rgba(59,130,246,0.35);">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--blue-light);margin-bottom:10px;">REST / année</div>
+        <div style="font-size:3rem;font-weight:900;color:var(--blue-light);line-height:1;">2 155</div>
+        <div style="font-size:1rem;color:var(--muted);margin-top:4px;">GB / an</div>
+        <div style="margin-top:12px;font-size:0.74rem;color:var(--muted);line-height:1.4;">410B × 10 000/min<br>× 60min × 24h × 365j</div>
+      </div>
+
+      <div class="card" style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;border-color:rgba(124,58,237,0.35);">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:#a78bfa;margin-bottom:10px;">gRPC / année</div>
+        <div style="font-size:3rem;font-weight:900;color:#a78bfa;line-height:1;">804</div>
+        <div style="font-size:1rem;color:var(--muted);margin-top:4px;">GB / an</div>
+        <div style="margin-top:12px;font-size:0.74rem;color:var(--muted);line-height:1.4;">153B × 10 000/min<br>× 60min × 24h × 365j</div>
+      </div>
+
+      <div class="card" style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.4);">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;color:#4ade80;margin-bottom:10px;">Économie annuelle</div>
+        <div style="font-size:2.8rem;font-weight:900;color:#4ade80;line-height:1;">1 351</div>
+        <div style="font-size:1rem;color:var(--muted);margin-top:4px;">GB / an sauvés</div>
+        <div style="margin-top:12px;">
+          <div style="font-size:1.1rem;font-weight:800;color:#4ade80;">≈ 1.35 TB / an</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:4px;">2 155 − 804 = 1 351 GB</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:12px;font-size:0.78rem;line-height:1.5;">
+        <strong style="color:var(--text);">Impact CO2 :</strong> <span style="color:var(--muted);">1.35 TB de trafic réseau économisé correspond à plusieurs centaines de kg CO2 eq. selon le datacenter (0.5–5g CO2/GB).</span>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:12px;font-size:0.78rem;line-height:1.5;">
+        <strong style="color:var(--text);">Coût bande passante :</strong> <span style="color:var(--muted);">À ~0.08$/GB (AWS/GCP), l'économie représente ~108$/an pour une seule instance de service. À l'échelle, substantiel.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8 -->
+  <div class="slide" data-slide="8">
+    <div class="slide-header">
+      <div class="slide-tag">Réglementation</div>
+      <h2 class="title">RGPD & Sécurité des données IoT industrielles</h2>
+      <hr class="divider">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;">
+      <div class="card" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="card-title">Données personnelles en contexte IoT</div>
+        <div class="rgpd-item">
+          <div class="rgpd-icon">📍</div>
+          <div class="rgpd-text">
+            <strong>Localisation du capteur</strong>
+            <span>L'emplacement d'un capteur peut identifier un poste de travail, et donc une personne → données personnelles indirectes (RGPD Art. 4)</span>
+          </div>
+        </div>
+        <div class="rgpd-item">
+          <div class="rgpd-icon">💓</div>
+          <div class="rgpd-text">
+            <strong>Données de santé indirectes</strong>
+            <span>Capteurs de vibration haute fréquence → possible corrélation avec rythme cardiaque ou fatigue du worker → catégorie spéciale (Art. 9)</span>
+          </div>
+        </div>
+        <div class="rgpd-item">
+          <div class="rgpd-icon">🌡️</div>
+          <div class="rgpd-text">
+            <strong>Patterns comportementaux</strong>
+            <span>Séries temporelles de présence/activité → profilage des habitudes de travail → nécessite analyse d'impact (DPIA)</span>
+          </div>
+        </div>
+        <div class="rgpd-item" style="border-bottom:none;">
+          <div class="rgpd-icon" style="background:rgba(245,158,11,0.2);">⚠️</div>
+          <div class="rgpd-text">
+            <strong>Obligation de DPIA</strong>
+            <span>Traitement à grande échelle de données de surveillance systématique → DPIA obligatoire avant déploiement</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card">
+          <div class="card-title">Obligations RGPD applicables</div>
+          <table class="data" style="font-size:0.8rem;">
+            <tbody>
+              <tr><td style="color:var(--blue-light);font-weight:700;width:40%;">Base légale</td><td>Intérêt légitime ou contrat (Art. 6.1.b/f) — documenter impérativement</td></tr>
+              <tr><td style="color:var(--blue-light);font-weight:700;">Conservation</td><td>Durée minimale nécessaire — ex : 90j pour alertes, 2 ans pour tendances</td></tr>
+              <tr><td style="color:var(--blue-light);font-weight:700;">Droits</td><td>Accès, rectification, effacement (sauf obligation légale)</td></tr>
+              <tr><td style="color:var(--blue-light);font-weight:700;">Journalisation</td><td>Tous les accès aux données doivent être tracés (auditabilité)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" style="background:rgba(239,68,68,0.06);border-color:rgba(239,68,68,0.25);">
+          <div class="card-title" style="color:#f87171;">Réglementation industrielle spécifique</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <span class="badge badge-red" style="flex-shrink:0;margin-top:2px;">NIS 2</span>
+              <div style="font-size:0.78rem;line-height:1.4;">Directive cybersécurité EU — opérateurs de services essentiels, obligations de notification d'incidents sous 24h</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <span class="badge badge-orange" style="flex-shrink:0;margin-top:2px;">EN 62443</span>
+              <div style="font-size:0.78rem;line-height:1.4;">Norme IEC pour la sécurité des systèmes industriels — segmentation réseau, authentification forte</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <span class="badge badge-blue" style="flex-shrink:0;margin-top:2px;">mTLS</span>
+              <div style="font-size:0.78rem;line-height:1.4;">Recommandé pour toutes communications inter-services — gRPC natif, REST via middleware. Non encore implémenté dans ce benchmark</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9 -->
+  <div class="slide" data-slide="9">
+    <div class="slide-header">
+      <div class="slide-tag">Décision</div>
+      <h2 class="title">Matrice de décision & Recommandation</h2>
+      <hr class="divider">
+    </div>
+
+    <div class="main-split">
+      <div class="card" style="display:flex;flex-direction:column;">
+        <div class="card-title">Matrice pondérée (échelle 1-5)</div>
+        <table class="data" style="flex:1;">
+          <thead>
+            <tr><th>Critère</th><th>Poids</th><th>REST</th><th>gRPC</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Latence p50</td><td style="color:var(--muted);">25%</td>
+              <td class="score-5">5</td><td class="score-4">4</td>
+            </tr>
+            <tr>
+              <td>Débit (req/s)</td><td style="color:var(--muted);">20%</td>
+              <td class="score-4">4</td><td class="score-3">3</td>
+            </tr>
+            <tr>
+              <td>Taille payload</td><td style="color:var(--muted);">20%</td>
+              <td class="score-2">2</td><td class="score-5">5</td>
+            </tr>
+            <tr>
+              <td>Maintenabilité</td><td style="color:var(--muted);">15%</td>
+              <td class="score-5">5</td><td class="score-3">3</td>
+            </tr>
+            <tr>
+              <td>Éco-conception</td><td style="color:var(--muted);">10%</td>
+              <td class="score-2">2</td><td class="score-5">5</td>
+            </tr>
+            <tr>
+              <td>Compétences équipe</td><td style="color:var(--muted);">10%</td>
+              <td class="score-5">5</td><td class="score-3">3</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
+          <div class="final-score" style="border:1px solid var(--blue-dark);color:var(--blue-light);">
+            REST
+            <div style="font-size:2rem;color:#fff;margin-top:4px;">3.90 / 5</div>
+          </div>
+          <div class="final-score" style="border:1px solid #7c3aed;color:#a78bfa;">
+            gRPC
+            <div style="font-size:2rem;color:#fff;margin-top:4px;">3.85 / 5</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:0.72rem;color:var(--muted);margin-top:6px;">Écart de 0.05 point — résultat statistiquement très proche</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card" style="background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.04));border-color:var(--blue-dark);">
+          <div class="card-title" style="font-size:0.85rem;">Recommandation : Architecture Hybride</div>
+          <div class="rec-steps">
+            <div class="rec-step">
+              <strong>Court terme</strong>
+              REST (Axum)<br>Time-to-market, onboarding équipe, APIs publiques
+            </div>
+            <div class="rec-step">
+              <strong>Moyen terme</strong>
+              gRPC (Tonic)<br>Flux capteurs haute fréquence, streaming interne
+            </div>
+            <div class="rec-step">
+              <strong>Long terme</strong>
+              MQTT / Broker<br>Capteurs contraints, déconnexions, QoS 1/2
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Décomposition du score REST</div>
+          <div style="font-size:0.8rem;color:var(--muted);line-height:2;font-family:monospace;">
+            (5×0.25) + (4×0.20) + (2×0.20) + (5×0.15) + (2×0.10) + (5×0.10)<br>
+            = <span style="color:var(--text);">1.25 + 0.80 + 0.40 + 0.75 + 0.20 + 0.50</span><br>
+            = <strong style="color:var(--blue-light);font-size:1rem;">3.90</strong>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Décomposition du score gRPC</div>
+          <div style="font-size:0.8rem;color:var(--muted);line-height:2;font-family:monospace;">
+            (4×0.25) + (3×0.20) + (5×0.20) + (3×0.15) + (5×0.10) + (3×0.10)<br>
+            = <span style="color:var(--text);">1.00 + 0.60 + 1.00 + 0.45 + 0.50 + 0.30</span><br>
+            = <strong style="color:#a78bfa;font-size:1rem;">3.85</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10 -->
+  <div class="slide" data-slide="10">
+    <div class="slide-header">
+      <div class="slide-tag">Conclusion</div>
+      <h2 class="title">Bilan, Limites & Prochaines étapes</h2>
+      <hr class="divider">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card" style="background:rgba(34,197,94,0.06);border-color:rgba(34,197,94,0.3);">
+          <div class="card-title" style="color:#4ade80;">Conclusions clés</div>
+          <ul class="fancy green">
+            <li><strong>gRPC gagne</strong> sur payload (2.7x compact), streaming natif, contrat fort .proto et éco-conception</li>
+            <li><strong>REST gagne</strong> sur accessibilité, maintenabilité, écosystème outillage et courbe d'apprentissage</li>
+            <li><strong>Latence loopback</strong> : REST légèrement meilleur (0.15ms vs 0.48ms p50) — différence s'atténuera avec latence réseau réelle</li>
+            <li><strong>Architecture hybride</strong> recommandée : démarrer REST, planifier migration gRPC pour les flux critiques haute fréquence</li>
+            <li><strong>Rust</strong> excellent dans les deux cas — performances natives, sécurité mémoire sans GC</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Prochaines étapes</div>
+          <ul class="fancy" style="gap:10px;">
+            <li>Tester avec <strong>Docker + réseau bridge</strong> pour mesurer l'overhead réseau réel (vs loopback)</li>
+            <li>Activer <strong>mTLS mutuel</strong> (certificats X.509) pour mesurer l'impact sécurité sur latence</li>
+            <li>Implémenter <strong>gRPC server-streaming</strong> (StreamSensorReadings) pour flux continu</li>
+            <li>Benchmark avec <strong>1 000+ capteurs simultanés</strong> pour valider la scalabilité</li>
+            <li>Intégrer <strong>MQTT</strong> pour les capteurs à ressources contraintes (ESP32, LoRa)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card" style="background:rgba(245,158,11,0.06);border-color:rgba(245,158,11,0.3);">
+          <div class="card-title" style="color:#fbbf24;">Limites du benchmark</div>
+          <ul class="fancy orange">
+            <li><strong>Loopback localhost</strong> — latence réseau réelle (1–50ms) changera radicalement les proportions</li>
+            <li><strong>Outils différents</strong> — k6 (HTTP/1.1) vs ghz (HTTP/2) → débits non directement comparables</li>
+            <li><strong>Machine unique</strong> — Mac de développement, pas d'environnement de production (VM/container)</li>
+            <li><strong>Pas de TLS activé</strong> — impact sur performance non mesuré (overhead handshake crypto)</li>
+            <li><strong>Payload minimal</strong> — un seul capteur, pas de batch, pas de données volumineuses</li>
+            <li><strong>Pas de garbage collection</strong> — Rust favorise les deux cas vs JVM/Go qui auraient des pauses GC</li>
+          </ul>
+        </div>
+
+        <div class="card" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(124,58,237,0.1));border-color:rgba(59,130,246,0.4);">
+          <div class="card-title">Résumé exécutif</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+            <div style="background:rgba(59,130,246,0.15);border-radius:8px;padding:12px;text-align:center;">
+              <div style="font-size:0.65rem;text-transform:uppercase;color:var(--blue-light);font-weight:700;margin-bottom:6px;">REST</div>
+              <div style="font-size:0.78rem;line-height:1.4;">Déployer <strong>maintenant</strong><br>APIs + CRUD services</div>
+            </div>
+            <div style="background:rgba(124,58,237,0.15);border-radius:8px;padding:12px;text-align:center;">
+              <div style="font-size:0.65rem;text-transform:uppercase;color:#a78bfa;font-weight:700;margin-bottom:6px;">gRPC</div>
+              <div style="font-size:0.78rem;line-height:1.4;">Planifier <strong>Q3/Q4</strong><br>Flux capteurs critiques</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;text-align:center;font-size:0.82rem;color:var(--muted);">
+            Le vainqueur ? <strong style="color:var(--text);">Le bon protocole au bon endroit.</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- NAVIGATION -->
+<nav class="nav">
+  <button id="prevBtn" onclick="navigate(-1)" disabled>&#8592; Préc</button>
+  <span class="counter" id="counter">1 / 10</span>
+  <button id="nextBtn" onclick="navigate(1)">Suiv &#8594;</button>
+</nav>
+
+<script>
+  const TOTAL = 10;
+  let current = 1;
+  let animating = false;
+
+  function getSlide(n) {
+    return document.querySelector('[data-slide="' + n + '"]');
+  }
+
+  function navigate(dir) {
+    if (animating) return;
+    const next = current + dir;
+    if (next < 1 || next > TOTAL) return;
+
+    animating = true;
+    const curr = getSlide(current);
+    const dest = getSlide(next);
+
+    curr.classList.add('exit-left');
+    curr.classList.remove('active');
+
+    // Prep destination
+    dest.style.transform = dir > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+    dest.style.opacity = '0';
+    dest.style.transition = 'none';
+    dest.classList.add('active');
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        dest.style.transition = '';
+        dest.style.transform = '';
+        dest.style.opacity = '';
+
+        setTimeout(() => {
+          curr.classList.remove('exit-left');
+          animating = false;
+        }, 400);
+      });
+    });
+
+    current = next;
+    updateUI();
+  }
+
+  function updateUI() {
+    document.getElementById('counter').textContent = current + ' / ' + TOTAL;
+    document.getElementById('slideNum').textContent = current + ' / ' + TOTAL;
+    document.getElementById('prevBtn').disabled = current === 1;
+    document.getElementById('nextBtn').disabled = current === TOTAL;
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigate(-1);
+  });
+
+  updateUI();
+</script>
+</body>
+</html>
