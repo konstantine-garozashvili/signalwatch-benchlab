@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignalWatch BenchLab</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0f172a;
+    --card: #1e293b;
+    --blue: #3b82f6;
+    --blue-dark: #1d4ed8;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+  }
+
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .container {
+    background: var(--card);
+    padding: 40px 50px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    max-width: 600px;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--muted);
+    margin-bottom: 30px;
+  }
+
+  .btn {
+    display: inline-block;
+    background: var(--blue);
+    color: var(--text);
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .btn:hover {
+    background: var(--blue-dark);
+  }
+  
+  .btn:active {
+    transform: scale(0.98);
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>SignalWatch BenchLab</h1>
+    <p>Bienvenue sur le banc d'essai technique comparant <strong>REST (Axum)</strong> et <strong>gRPC (Tonic)</strong> pour la plateforme IoT industrielle SignalWatch, conçue pour gérer des fréquences élevées (10 000 événements par minute).</p>
+    <a href="docs/presentation-slides.html" class="btn">Presentate</a>
+  </div>
+</body>
+</html>
